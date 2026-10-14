@@ -182,14 +182,42 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
   - Cập nhật linh hoạt toàn bộ giao diện: thanh tiến trình, nhãn đếm ngược, và thông điệp trên thẻ khóa (*"Hãy học đủ X phút để kích hoạt toàn bộ rạp chiếu"*).
   - Có sẵn thanh đổi mục tiêu nhanh ngay trên thẻ kính mờ đang khóa.
 
-- **Sửa Lỗi Console Error: Encountered a script tag while rendering React component:**
-  - Thay thế thẻ `<script>` thủ công trong `<head>` của [src/app/layout.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/layout.tsx) bằng thành phần chính thức `<Script id="bis-cleaner" strategy="beforeInteractive">` từ thư viện `next/script`.
-  - Triệt tiêu hoàn toàn lỗi console cảnh báo của React 19 / Next.js 16 mà vẫn đảm bảo mã chặn extension injection chạy trước khi client hydrate.
+- **Sửa Lỗi Console Error: Encountered a script tag while rendering React component (React 19):**
+  - Xóa bỏ hoàn toàn thẻ `<Script>` trong [src/app/layout.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/layout.tsx).
+  - Chuyển toàn bộ logic dọn dẹp thuộc tính mở rộng của trình duyệt vào `useEffect` sau khi mount trong [src/components/app-shell/AppShell.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/app-shell/AppShell.tsx).
+  - Triệt tiêu 100% mọi cảnh báo Console của React 19 và Turbopack.
+
+- **Sửa Lỗi Nút Replay & Lỗi "Chọn bài khác chạy nhạc nền bài cũ bìa bài khác":**
+  - **Nguyên nhân lỗi nhạc cũ chồng bìa mới:**
+    - Cấu hình YouTube Iframe `host: 'https://www.youtube-nocookie.com'` làm trình duyệt chặn cơ chế `postMessage` RPC giữa parent và iframe, khiến lệnh `loadVideoById` gọi bài mới bị bỏ qua trong âm thầm, video cũ vẫn tiếp tục chạy ngầm trong khi Store đã đổi bìa bài mới.
+    - Trong hàm nhận diện chuyển bài (`currentTrackIdRef.current !== currentTrack.id`), trước đây gọi `ytPlayerRef.current.seekTo(0, true)` khiến bài cũ vô tình bị phát lại 0.5s từ 0:00 trước khi tải bài mới.
+  - **Giải pháp xử lý:**
+    - Đổi sang `host: 'https://www.youtube.com'` chuẩn, khôi phục thông suốt toàn bộ lệnh gọi hàm YouTube Iframe API.
+    - Khi đổi bài hát: lập tức gọi `ytPlayerRef.current.pauseVideo()` tắt âm bài cũ ngay lập tức, sau đó nạp bài mới bằng `loadVideoById(ytId, 0)`.
+    - Khi Replay: dựa vào sự thay đổi của `playTrigger`, luôn gọi trực tiếp `loadVideoById(ytId, 0)` đảm bảo video được tua về đúng 0:00 và bắt đầu phát lại kể cả khi đã ở trạng thái kết thúc (ENDED).
+
+- **Thêm Nút Chia Đôi SPLIT SESSION Vào Thanh Phát Đáy (BottomPlayerDock):**
+  - Đặt nút điều hướng `<SplitSquareVertical />` tới trang `/focus-session` (Không gian học tập song song) chính xác ở vị trí nằm giữa nút **Window PIP** (`<Tv />`) và nút **Mở rộng Karaoke Lyrics** (`<FileText />`).
+  - Nút luôn giữ nguyên trật tự trực quan trên thanh điều khiển.
+
+- **Tái Cấu Trúc Toàn Diện CineChill — Tập Trung 100% Vào VibeTube:**
+  - **Xóa bỏ hoàn toàn:**
+    - Danh mục tĩnh 5 phim ("DANH MỤC PHIM VIBETUBE CHILL THƯ GIÃN TUYỂN CHỌN").
+    - Nút tab FLIXOUT (NETFLIX POP-OUT), thẻ tài khoản Netflix, các đề xuất Netflix và toàn bộ mã nguồn liên quan.
+  - **Cổng YouTube Trực Tiếp Tại Chỗ (In-Room VibeTube Hub):**
+    - Tạo API `/api/youtube/search` và module tìm kiếm phân tích trực tiếp dữ liệu từ YouTube không cần API key rườm rà.
+    - Thanh tìm kiếm tại chỗ: người học chỉ cần gõ từ khóa (ví dụ: cảnh mưa anime, phim tài liệu, nhạc lofi) hoặc dán link/ID để xem ngay, không phải mở youtube.com bên ngoài rồi copy link thủ công.
+    - Bộ lọc chủ đề chill 1-click: *Anime 4K Scenery*, *Studio Ghibli Vibe*, *Mưa & Cà Phê 4K*, *Tokyo Cyberpunk Night*, *Vũ Trụ & Deep Space*, *Lofi Girl Live 24/7*, *Coding Session Chill*, *Thiên Nhiên & Núi Rừng*.
+    - Lưới video kết quả trực tuyến sắc nét với ảnh bìa HD, thời lượng, kênh phát và nút 1-click phát ngay lên màn hình rạp chiếu lớn.
+  - **Cổng Cắm Tài Khoản YouTube Premium (YouTube Premium Vault):**
+    - Thẻ / Hộp thoại cấu hình YouTube Premium cho phép người dùng lưu tài khoản email và token/mật khẩu vào hệ thống để Monokuro ưu tiên luồng xem không quảng cáo (Zero Ads) và chất lượng 4K cao nhất.
+    - Hiển thị badge trạng thái `PREMIUM: {email}` nổi bật trên thanh tiêu đề CineChill.
 
 ---
 
 ## 🧪 5. Trạng Thái Build & Kiểm Tra Hiện Tại
 - Lệnh build: `npm run build` (Turbopack + TypeScript check)
-- Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 15/15 static pages generated)**.
-- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn).
+- Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 16/16 static pages generated)**.
+- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `e4ecb3a`).
 - Dev server đang chạy ổn định tại: `http://localhost:3000/cinechill`.
+
