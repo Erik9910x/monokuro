@@ -17,6 +17,7 @@ import {
   AlertCircle,
   FileText,
   Tv,
+  SplitSquareVertical,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
@@ -269,20 +270,28 @@ export default function BottomPlayerDock() {
           </div>
 
           {/* Video PIP Toggle Button */}
-          {currentTrack.youtubeId && (
-            <button
-              onClick={togglePipVideo}
-              title={t('player_video_pip')}
-              aria-label={t('player_video_pip')}
-              className={`rounded-md border p-1.5 transition-colors ${
-                isPipVideoOpen
-                  ? 'border-white bg-white/10 text-white'
-                  : 'border-white/10 text-zinc-400 hover:text-white hover:border-white/30'
-              }`}
-            >
-              <Tv className="h-4 w-4" />
-            </button>
-          )}
+          <button
+            onClick={togglePipVideo}
+            title={t('player_video_pip')}
+            aria-label={t('player_video_pip')}
+            className={`rounded-md border p-1.5 transition-colors ${
+              isPipVideoOpen
+                ? 'border-white bg-white/10 text-white'
+                : 'border-white/10 text-zinc-400 hover:text-white hover:border-white/30'
+            }`}
+          >
+            <Tv className="h-4 w-4" />
+          </button>
+
+          {/* Chia đôi SPLIT SESSION (Concurrent Workspace) */}
+          <Link
+            href="/focus-session"
+            className="rounded-md border border-white/10 p-1.5 text-zinc-400 hover:text-white hover:border-white/30 transition-colors"
+            title="Chia đôi SPLIT SESSION (Học tập & Nghe nhạc)"
+            aria-label="Chia đôi SPLIT SESSION"
+          >
+            <SplitSquareVertical className="h-4 w-4" />
+          </Link>
 
           {/* Open full VibraX page */}
           <Link

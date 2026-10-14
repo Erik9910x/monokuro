@@ -118,3 +118,98 @@ export async function searchYouTubeVideoId(query: string): Promise<string | null
     return null;
   }
 }
+
+export interface YouTubeVideoItem {
+  id: string;
+  title: string;
+  channel: string;
+  duration: string;
+  thumbnail: string;
+  views?: string;
+  publishedTime?: string;
+}
+
+export async function searchYouTubeVideos(query: string, limit = 16): Promise<YouTubeVideoItem[]> {
+  if (!query || !query.trim()) return [];
+  const cleanQuery = query.trim();
+
+  try {
+    const text = await fetchYouTubeHtml(
+      `https://www.youtube.com/results?search_query=${encodeURIComponent(cleanQuery)}`,
+      6000
+    );
+
+    if (!text) return [];
+
+    const jsonMatch = text.match(/var ytInitialData = ({.*?});<\/script>/) || text.match(/ytInitialData\s*=\s*({.+?});/);
+    if (jsonMatch) {
+      try {
+        const data = JSON.parse(jsonMatch[1]);
+        const contents = data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents;
+        const items = contents?.find((c: any) => c?.itemSectionRenderer?.contents)?.itemSectionRenderer?.contents || [];
+
+        const results: YouTubeVideoItem[] = [];
+        for (const item of items) {
+          if (item.videoRenderer && item.videoRenderer.videoId) {
+            const vr = item.videoRenderer;
+            const videoId = vr.videoId;
+            const title =
+              vr.title?.runs?.map((r: any) => r.text).join('') ||
+              vr.title?.simpleText ||
+              vr.title?.accessibility?.accessibilityData?.label ||
+              'YouTube Video';
+            const channel =
+              vr.ownerText?.runs?.map((r: any) => r.text).join('') ||
+              vr.longBylineText?.runs?.map((r: any) => r.text).join('') ||
+              'YouTube Channel';
+            const duration = vr.lengthText?.simpleText || 'HD';
+            const views = vr.viewCountText?.simpleText || vr.shortViewCountText?.simpleText || '';
+            const publishedTime = vr.publishedTimeText?.simpleText || '';
+            const thumbnail =
+              vr.thumbnail?.thumbnails?.slice(-1)[0]?.url ||
+              `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+            results.push({
+              id: videoId,
+              title,
+              channel,
+              duration,
+              thumbnail,
+              views,
+              publishedTime,
+            });
+
+            if (results.length >= limit) break;
+          }
+        }
+
+        if (results.length > 0) {
+          return results;
+        }
+      } catch (err) {
+        console.warn('Failed to parse ytInitialData in searchYouTubeVideos:', err);
+      }
+    }
+
+    // Fallback regex extraction if JSON parse failed
+    const videoRegex = /\/watch\?v=([a-zA-Z0-9_-]{11})/g;
+    const ids = new Set<string>();
+    let m;
+    while ((m = videoRegex.exec(text)) !== null) {
+      ids.add(m[1]);
+      if (ids.size >= limit) break;
+    }
+
+    return Array.from(ids).map((id) => ({
+      id,
+      title: `${cleanQuery} (${id})`,
+      channel: 'YouTube',
+      duration: 'HD',
+      thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+    }));
+  } catch (e) {
+    console.error('searchYouTubeVideos error:', e);
+    return [];
+  }
+}
+

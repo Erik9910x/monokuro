@@ -42,6 +42,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setIsMounted(true);
+    try {
+      const origSet = Element.prototype.setAttribute;
+      Element.prototype.setAttribute = function (name, val) {
+        if (
+          typeof name === 'string' &&
+          (name.startsWith('bis_') || name === 'bis_skin_checked' || name === 'bis_register')
+        ) {
+          return;
+        }
+        return origSet.call(this, name, val);
+      };
+      const clean = () => {
+        const els = document.querySelectorAll('[bis_skin_checked], [bis_register]');
+        for (let i = 0; i < els.length; i++) {
+          els[i].removeAttribute('bis_skin_checked');
+          els[i].removeAttribute('bis_register');
+        }
+        if (document.body) document.body.removeAttribute('bis_register');
+      };
+      clean();
+    } catch {}
   }, []);
 
   // Monotonic wall-clock timer ticker

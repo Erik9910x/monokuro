@@ -53,6 +53,7 @@ export default function GlobalAudioPlayer() {
   const lastLoadedAudioSrcRef = useRef<string | null>(null);
   const lastLoadedYtVideoIdRef = useRef<string | null>(null);
   const pendingYtVideoIdRef = useRef<string | null>(null);
+  const lastPlayTriggerRef = useRef<number>(0);
 
   const [ytApiLoaded, setYtApiLoaded] = useState(false);
 
@@ -217,10 +218,10 @@ export default function GlobalAudioPlayer() {
         audioRef.current.currentTime = 0;
       }
 
-      // Reset YouTube player to 0:00
+      // Immediately halt the previous YouTube video to prevent old song audio overlap!
       if (ytPlayerRef.current && isYtReadyRef.current) {
         try {
-          ytPlayerRef.current.seekTo(0, true);
+          ytPlayerRef.current.pauseVideo();
         } catch {}
       }
 
@@ -296,7 +297,7 @@ export default function GlobalAudioPlayer() {
         width: '100%',
         height: '100%',
         videoId: initialId,
-        host: 'https://www.youtube-nocookie.com',
+        host: 'https://www.youtube.com',
         playerVars: {
           autoplay: 0,
           controls: 0,
@@ -316,7 +317,7 @@ export default function GlobalAudioPlayer() {
             if (targetId) {
               lastLoadedYtVideoIdRef.current = targetId;
               if (userIntent === 'play') {
-                event.target.loadVideoById({ videoId: targetId, startSeconds: progress > 0 ? Math.floor(progress) : 0 });
+                event.target.loadVideoById(targetId, 0);
               } else {
                 event.target.cueVideoById(targetId, 0);
               }
@@ -390,18 +391,15 @@ export default function GlobalAudioPlayer() {
       if (ytPlayerRef.current && isYtReadyRef.current) {
         try {
           if (userIntent === 'play') {
-            if (lastLoadedYtVideoIdRef.current !== ytId) {
+            const isDifferentVideo = lastLoadedYtVideoIdRef.current !== ytId;
+            const isReplayTriggered = lastPlayTriggerRef.current !== playTrigger;
+            lastPlayTriggerRef.current = playTrigger;
+
+            if (isDifferentVideo || isReplayTriggered) {
               lastLoadedYtVideoIdRef.current = ytId;
-              const startSec = progress > 0 ? Math.floor(progress) : 0;
-              ytPlayerRef.current.loadVideoById({
-                videoId: ytId,
-                startSeconds: startSec,
-              });
+              ytPlayerRef.current.loadVideoById(ytId, 0);
             } else {
-              // Replaying same track or resuming
-              if (progress === 0 || ytPlayerRef.current.getPlayerState?.() === 0) {
-                ytPlayerRef.current.seekTo(0, true);
-              }
+              // Resuming normal playback from pause
               ytPlayerRef.current.playVideo();
             }
           } else if (userIntent === 'pause') {
