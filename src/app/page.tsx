@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Timer, Music, Tv, SplitSquareVertical, ArrowRight, HardDrive } from 'lucide-react';
+import { Timer, Music, Tv, Film, SplitSquareVertical, ArrowRight, HardDrive } from 'lucide-react';
 import { useTimerStore } from '@/lib/store/timerStore';
 import { usePlayerStore } from '@/lib/store/playerStore';
 
@@ -36,7 +36,7 @@ export default function HomePage() {
           </h1>
           <p className="max-w-xl mx-auto text-sm sm:text-base text-zinc-400 font-normal leading-relaxed">
             A quiet, distraction-free environment uniting deep work intervals, ambient study music,
-            and transcript-backed video learning.
+            and cinema chill rewards.
           </p>
         </div>
 
@@ -120,29 +120,28 @@ export default function HomePage() {
             </div>
           </Link>
 
-          {/* FRAMEWHISPER Card */}
+          {/* CINECHILL Card */}
           <Link
-            href="/framewhisper"
+            href="/cinechill"
             className="group liquid-glass-card rounded-2xl p-5 transition-all duration-200 hover:border-white/25 hover:-translate-y-1"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] text-white group-hover:bg-white group-hover:text-black transition-colors">
-                <Tv className="h-5 w-5" />
+                <Film className="h-5 w-5" />
               </div>
               <span className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest">
                 MOD 03
               </span>
             </div>
             <h2 className="text-base font-mono font-medium text-white mb-2 flex items-center gap-2">
-              FRAMEWHISPER
+              CINECHILL
               <ArrowRight className="h-4 w-4 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-zinc-300" />
             </h2>
             <p className="text-xs text-zinc-400 leading-relaxed mb-4">
-              YouTube study player with timestamp bookmarks, autosaving notes, SRT/VTT parser, and
-              AI tutor.
+              Minimalist cinema reward theater unlocked after 30 minutes of study. In-app chill &amp; Netflix Pop-out.
             </p>
             <div className="font-mono text-[11px] text-zinc-500 flex items-center gap-2">
-              <span>● READY</span>
+              <span>● THEATER</span>
             </div>
           </Link>
         </div>

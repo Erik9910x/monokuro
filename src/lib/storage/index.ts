@@ -331,3 +331,69 @@ export async function clearAllLocalData(): Promise<void> {
     localStorage.removeItem(SETTINGS_KEY);
   }
 }
+
+// ===== TODAY STUDY STATS (FOR CINECHILL UNLOCK MECHANIC) =====
+export interface TodayStudyStats {
+  totalSeconds: number;
+  totalFormatted: string;
+  targetSeconds: number;
+  progressPercent: number;
+  isUnlocked: boolean;
+  sessionsCount: number;
+}
+
+export async function getTodayStudyStats(targetMinutes = 30): Promise<TodayStudyStats> {
+  try {
+    const sessions = await listTimerSessions(200);
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+    let totalMs = 0;
+    let count = 0;
+
+    for (const s of sessions) {
+      if (s.mode === 'focus' && s.createdAt >= startOfDay) {
+        count++;
+        if (s.status === 'completed') {
+          totalMs += s.durationMs;
+        } else if (s.startedAt) {
+          const endTime =
+            s.completedAt ||
+            (s.pausedRemainingMs !== null && s.pausedRemainingMs !== undefined && s.deadlineAt
+              ? s.deadlineAt - s.pausedRemainingMs
+              : s.updatedAt);
+          const elapsed = Math.max(0, Math.min(s.durationMs, (endTime || s.updatedAt) - s.startedAt));
+          totalMs += elapsed;
+        }
+      }
+    }
+
+    const totalSeconds = Math.floor(totalMs / 1000);
+    const targetSeconds = targetMinutes * 60;
+    const progressPercent = Math.min(100, Math.round((totalSeconds / targetSeconds) * 100));
+    const isUnlocked = totalSeconds >= targetSeconds;
+
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    const totalFormatted = `${mins}m ${secs.toString().padStart(2, '0')}s`;
+
+    return {
+      totalSeconds,
+      totalFormatted,
+      targetSeconds,
+      progressPercent,
+      isUnlocked,
+      sessionsCount: count,
+    };
+  } catch (err) {
+    console.warn('Failed to calculate today study stats:', err);
+    return {
+      totalSeconds: 0,
+      totalFormatted: '0m 00s',
+      targetSeconds: targetMinutes * 60,
+      progressPercent: 0,
+      isUnlocked: false,
+      sessionsCount: 0,
+    };
+  }
+}

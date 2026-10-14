@@ -7,6 +7,7 @@ import {
   Timer,
   Music,
   Tv,
+  Film,
   Settings,
   Maximize2,
   Minimize2,
@@ -157,11 +158,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       isActive: pathname.startsWith('/vibrax'),
     },
     {
-      name: t('nav_framewhisper'),
-      href: '/framewhisper',
-      icon: Tv,
+      name: t('nav_cinechill'),
+      href: '/cinechill',
+      icon: Film,
       badge: null,
-      isActive: pathname.startsWith('/framewhisper'),
+      isActive: pathname.startsWith('/cinechill') || pathname.startsWith('/framewhisper'),
     },
     {
       name: t('nav_settings'),
