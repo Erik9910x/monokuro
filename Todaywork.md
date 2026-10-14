@@ -182,6 +182,10 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
   - Cập nhật linh hoạt toàn bộ giao diện: thanh tiến trình, nhãn đếm ngược, và thông điệp trên thẻ khóa (*"Hãy học đủ X phút để kích hoạt toàn bộ rạp chiếu"*).
   - Có sẵn thanh đổi mục tiêu nhanh ngay trên thẻ kính mờ đang khóa.
 
+- **Sửa Lỗi Console Error: Encountered a script tag while rendering React component:**
+  - Thay thế thẻ `<script>` thủ công trong `<head>` của [src/app/layout.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/layout.tsx) bằng thành phần chính thức `<Script id="bis-cleaner" strategy="beforeInteractive">` từ thư viện `next/script`.
+  - Triệt tiêu hoàn toàn lỗi console cảnh báo của React 19 / Next.js 16 mà vẫn đảm bảo mã chặn extension injection chạy trước khi client hydrate.
+
 ---
 
 ## 🧪 5. Trạng Thái Build & Kiểm Tra Hiện Tại
