@@ -25,14 +25,15 @@ export default function LanguageSelector() {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
+        suppressHydrationWarning
         onClick={() => setIsOpen(!isOpen)}
         className="liquid-pill flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-mono text-zinc-300 hover:text-white transition-colors"
         aria-label="Select Language"
         title="Select Language"
       >
         <Globe className="h-3.5 w-3.5 text-zinc-400" />
-        <span>{currentMeta.flag}</span>
-        <span className="hidden sm:inline uppercase">{currentMeta.code}</span>
+        <span suppressHydrationWarning>{currentMeta.flag}</span>
+        <span suppressHydrationWarning className="hidden sm:inline uppercase">{currentMeta.code}</span>
         <ChevronDown className="h-3 w-3 text-zinc-500" />
       </button>
 

@@ -23,7 +23,7 @@ export const translations = {
   vi: {
     // Nav
     nav_focusx: 'FOCUSX',
-    nav_split_session: 'PHIÊN CHIA ĐÔI',
+    nav_split_session: 'SPLIT SESSION',
     nav_vibrax: 'VIBRAX',
     nav_framewhisper: 'CINECHILL',
     nav_cinechill: 'CINECHILL',

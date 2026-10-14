@@ -241,9 +241,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" />
-                    <span className="hidden md:inline">{item.name}</span>
+                    <span suppressHydrationWarning className="hidden md:inline">{item.name}</span>
                     {item.badge && (
-                      <span className="ml-0.5 flex h-4 items-center rounded bg-white/10 px-1 text-[10px] font-mono text-white animate-pulse">
+                      <span suppressHydrationWarning className="ml-0.5 flex h-4 items-center rounded bg-white/10 px-1 text-[10px] font-mono text-white animate-pulse">
                         {item.badge}
                       </span>
                     )}
