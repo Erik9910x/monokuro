@@ -28,6 +28,13 @@ import { useTimerStore } from '@/lib/store/timerStore';
 import { getCompletedStudySecondsToday } from '@/lib/storage';
 import { YouTubeVideoItem } from '@/lib/music/youtube';
 
+// Unlock & Goal Configuration
+const GOAL_PRESETS = [10, 20, 30, 45, 60];
+const MIN_GOAL_MINUTES = 10;
+const MAX_GOAL_MINUTES = 240;
+const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+const UNLOCKED_UNTIL_KEY = 'monokuro_cinechill_unlocked_until';
+
 // Quick Vibe categories for 1-click discovery
 const QUICK_VIBE_CATEGORIES = [
   { label: 'Anime 4K Scenery', query: 'anime scenic chill 4k atmosphere' },
@@ -113,6 +120,9 @@ export default function CineChillPage() {
   const [countdownDisplay, setCountdownDisplay] = useState('30:00');
   const [progressPercent, setProgressPercent] = useState(0);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [unlockUntil, setUnlockUntil] = useState<number | null>(null);
+  const unlockUntilRef = useRef<number | null>(null);
+  const [unlockRemainingFormatted, setUnlockRemainingFormatted] = useState<string>('');
 
   // Base past seconds from IndexedDB
   const basePastSecondsRef = useRef<number>(0);
@@ -143,15 +153,32 @@ export default function CineChillPage() {
   const [antiAdsActive, setAntiAdsActive] = useState(true);
   const [isPremiumSaved, setIsPremiumSaved] = useState(false);
 
-  // Load account & Goal of the Day from localStorage
+  // Load account, 12h unlock state & Goal of the Day from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // 12-Hour Unlock check on mount (avoid any flash on F5)
+      const savedUntil = localStorage.getItem(UNLOCKED_UNTIL_KEY);
+      if (savedUntil) {
+        const parsedUntil = parseInt(savedUntil, 10);
+        if (!isNaN(parsedUntil) && parsedUntil > Date.now()) {
+          setUnlockUntil(parsedUntil);
+          unlockUntilRef.current = parsedUntil;
+          setIsUnlocked(true);
+        } else if (!isNaN(parsedUntil) && parsedUntil <= Date.now()) {
+          localStorage.removeItem(UNLOCKED_UNTIL_KEY);
+        }
+      }
+
       const savedGoal = localStorage.getItem('monokuro_cinechill_goal_minutes');
       if (savedGoal) {
         const parsed = parseInt(savedGoal, 10);
-        if (!isNaN(parsed) && parsed > 0 && parsed <= 240) {
+        if (!isNaN(parsed) && parsed >= MIN_GOAL_MINUTES && parsed <= MAX_GOAL_MINUTES) {
           setGoalMinutes(parsed);
           goalMinutesRef.current = parsed;
+        } else if (!isNaN(parsed) && parsed < MIN_GOAL_MINUTES) {
+          setGoalMinutes(MIN_GOAL_MINUTES);
+          goalMinutesRef.current = MIN_GOAL_MINUTES;
+          localStorage.setItem('monokuro_cinechill_goal_minutes', String(MIN_GOAL_MINUTES));
         }
       }
 
@@ -171,7 +198,7 @@ export default function CineChillPage() {
   }, []);
 
   const handleSetGoalMinutes = (mins: number) => {
-    const clamped = Math.max(1, Math.min(240, mins));
+    const clamped = Math.max(MIN_GOAL_MINUTES, Math.min(MAX_GOAL_MINUTES, mins));
     setGoalMinutes(clamped);
     goalMinutesRef.current = clamped;
     if (typeof window !== 'undefined') {
@@ -182,7 +209,7 @@ export default function CineChillPage() {
   const handleApplyCustomGoal = (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = parseInt(customGoalInput.trim(), 10);
-    if (!isNaN(parsed) && parsed > 0 && parsed <= 240) {
+    if (!isNaN(parsed)) {
       handleSetGoalMinutes(parsed);
       setCustomGoalModalOpen(false);
     }
@@ -244,17 +271,53 @@ export default function CineChillPage() {
         }
       }
 
+      const now = Date.now();
+      const storedUntil = unlockUntilRef.current;
+      const hasActive12hUnlock = Boolean(storedUntil && storedUntil > now);
+
       const totalSecs = basePastSecondsRef.current + liveCurrentSessionSecs;
-      const currentGoalMins = goalMinutesRef.current || 30;
+      const currentGoalMins = goalMinutesRef.current || MIN_GOAL_MINUTES;
       const TARGET_SECS = currentGoalMins * 60;
       const remainingSecs = Math.max(0, TARGET_SECS - totalSecs);
       const progress = Math.min(100, Math.round((totalSecs / TARGET_SECS) * 100));
-      const unlocked = totalSecs >= TARGET_SECS;
+      
+      const reachedStudyTarget = totalSecs >= TARGET_SECS;
+
+      if (reachedStudyTarget) {
+        // Extend/set 12-hour unlock window
+        const targetUntil = now + TWELVE_HOURS_MS;
+        if (!storedUntil || storedUntil < targetUntil - 60000) {
+          unlockUntilRef.current = targetUntil;
+          setUnlockUntil(targetUntil);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(UNLOCKED_UNTIL_KEY, String(targetUntil));
+          }
+        }
+      }
+
+      // Check whether access is unlocked
+      const isCurrentlyUnlocked = reachedStudyTarget || hasActive12hUnlock;
+      setIsUnlocked(isCurrentlyUnlocked);
+
+      // Format remaining 12h unlock time if active
+      const activeUntil = unlockUntilRef.current;
+      if (activeUntil && activeUntil > now) {
+        const msLeft = activeUntil - now;
+        const hLeft = Math.floor(msLeft / 3600000);
+        const mLeft = Math.floor((msLeft % 3600000) / 60000);
+        const sLeft = Math.floor((msLeft % 60000) / 1000);
+        if (hLeft > 0) {
+          setUnlockRemainingFormatted(`${hLeft}h ${mLeft.toString().padStart(2, '0')}m`);
+        } else {
+          setUnlockRemainingFormatted(`${mLeft}m ${sLeft.toString().padStart(2, '0')}s`);
+        }
+      } else {
+        setUnlockRemainingFormatted('');
+      }
 
       setTotalStudiedSecs(totalSecs);
       setCountdownRemainingSecs(remainingSecs);
       setProgressPercent(progress);
-      setIsUnlocked(unlocked);
 
       const countdownHours = Math.floor(remainingSecs / 3600);
       const countdownMins = Math.floor((remainingSecs % 3600) / 60);
@@ -367,8 +430,8 @@ export default function CineChillPage() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Strict Lock Evaluation: Only opens when goal minutes are reached
-  const isAccessAllowed = isUnlocked;
+  // Strict Lock Evaluation: Only opens when goal reached or within active 12-hour unlock window
+  const isAccessAllowed = isUnlocked || Boolean(unlockUntil && unlockUntil > Date.now());
   const currentEmbedUrl = `https://www.youtube.com/embed/${currentVideoId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`;
 
   return (
@@ -389,9 +452,11 @@ export default function CineChillPage() {
               </span>
 
               {isAccessAllowed ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   <Unlock className="h-3 w-3" />
-                  ĐÃ ĐỦ ĐIỀU KIỆN (MỞ KHÓA)
+                  <span>
+                    ĐÃ MỞ KHÓA 12H{unlockRemainingFormatted ? ` (CÒN ${unlockRemainingFormatted})` : ''}
+                  </span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -453,7 +518,7 @@ export default function CineChillPage() {
                 MỤC TIÊU MỞ KHÓA:
               </span>
               <div className="flex items-center gap-1 bg-white/[0.04] p-0.5 rounded-lg border border-white/10">
-                {[15, 30, 45, 60].map((m) => (
+                {GOAL_PRESETS.map((m) => (
                   <button
                     key={m}
                     onClick={() => handleSetGoalMinutes(m)}
@@ -472,14 +537,14 @@ export default function CineChillPage() {
                     setCustomGoalModalOpen(true);
                   }}
                   className={`px-2 py-0.5 rounded text-[10px] transition-colors flex items-center gap-1 cursor-pointer ${
-                    ![15, 30, 45, 60].includes(goalMinutes)
+                    !GOAL_PRESETS.includes(goalMinutes)
                       ? 'bg-amber-400 text-black font-bold shadow-sm'
                       : 'text-zinc-400 hover:text-white'
                   }`}
-                  title="Chỉnh mục tiêu tùy chỉnh"
+                  title="Chỉnh mục tiêu tùy chỉnh (tối thiểu 10p)"
                 >
                   <Edit3 className="h-2.5 w-2.5" />
-                  <span>{![15, 30, 45, 60].includes(goalMinutes) ? `${goalMinutes}m` : 'Tùy chỉnh'}</span>
+                  <span>{!GOAL_PRESETS.includes(goalMinutes) ? `${goalMinutes}m` : 'Tùy chỉnh'}</span>
                 </button>
               </div>
             </div>
@@ -491,11 +556,11 @@ export default function CineChillPage() {
             <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 font-mono shadow-sm">
               <div className="flex flex-col text-right">
                 <span className="text-[10px] text-zinc-400 uppercase tracking-wider flex items-center gap-1 justify-end">
-                  <span className={`h-1.5 w-1.5 rounded-full ${timerStatus === 'running' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                  {isAccessAllowed ? 'MỤC TIÊU HỌC' : 'ĐẾM NGƯỢC MỞ KHÓA'}
+                  <span className={`h-1.5 w-1.5 rounded-full ${isAccessAllowed ? 'bg-emerald-400 animate-pulse' : timerStatus === 'running' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                  {isAccessAllowed ? 'HIỆU LỰC MỞ KHÓA 12H' : 'ĐẾM NGƯỢC MỞ KHÓA'}
                 </span>
                 <span className="text-base font-bold text-white tracking-widest">
-                  {isAccessAllowed ? '00:00 (HOÀN TẤT)' : countdownDisplay}
+                  {isAccessAllowed ? (unlockRemainingFormatted ? `CÒN ${unlockRemainingFormatted}` : 'ĐÃ MỞ KHÓA') : countdownDisplay}
                 </span>
               </div>
             </div>
@@ -554,7 +619,7 @@ export default function CineChillPage() {
               {/* Quick Goal Selector on Locked Card */}
               <div className="flex flex-wrap items-center justify-center gap-1.5 font-mono text-xs text-zinc-400">
                 <span className="text-[11px] text-zinc-500">Mục tiêu hôm nay:</span>
-                {[15, 30, 45, 60].map((m) => (
+                {GOAL_PRESETS.map((m) => (
                   <button
                     key={m}
                     onClick={() => handleSetGoalMinutes(m)}
@@ -573,13 +638,13 @@ export default function CineChillPage() {
                     setCustomGoalModalOpen(true);
                   }}
                   className={`px-2 py-1 rounded-lg text-[11px] transition-colors border cursor-pointer flex items-center gap-1 ${
-                    ![15, 30, 45, 60].includes(goalMinutes)
+                    !GOAL_PRESETS.includes(goalMinutes)
                       ? 'bg-amber-400 text-black border-amber-400 font-bold'
                       : 'border-white/10 text-zinc-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <Edit3 className="h-3 w-3" />
-                  <span>{![15, 30, 45, 60].includes(goalMinutes) ? `${goalMinutes}m` : 'Tùy chỉnh'}</span>
+                  <span>{!GOAL_PRESETS.includes(goalMinutes) ? `${goalMinutes}m` : 'Tùy chỉnh'}</span>
                 </button>
               </div>
 
@@ -971,18 +1036,21 @@ export default function CineChillPage() {
             <form onSubmit={handleApplyCustomGoal} className="space-y-4">
               <div>
                 <label className="block text-xs font-mono text-zinc-400 mb-2">
-                  Số phút cần học hôm nay (1 - 240 phút):
+                  Số phút cần học hôm nay (10 - 240 phút):
                 </label>
                 <input
                   type="number"
-                  min="1"
+                  min="10"
                   max="240"
                   autoFocus
                   value={customGoalInput}
                   onChange={(e) => setCustomGoalInput(e.target.value)}
-                  placeholder="Ví dụ: 30"
+                  placeholder="Ví dụ: 30 (tối thiểu 10)"
                   className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-2.5 font-mono text-sm text-white focus:outline-none focus:border-amber-400"
                 />
+                <p className="text-[11px] font-mono text-zinc-500 mt-1.5">
+                  Tối thiểu 10 phút. Sau khi đạt mục tiêu, CineChill sẽ mở khóa liên tục trong 12 giờ.
+                </p>
               </div>
 
               <div className="flex gap-2">

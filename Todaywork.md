@@ -246,13 +246,28 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
   - **Khởi tạo mượt mà không lệch Hydration:**
     - Import đầy đủ `CURATED_STUDY_TRACKS` và sử dụng cờ `displayTrack` an toàn trong [src/app/vibrax/page.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/vibrax/page.tsx).
 
+- **Cơ Chế Mở Khóa CineChill 12 Giờ Liên Tục (12-Hour Persistent Unlock):**
+  - **Vấn đề trước đây:** Mỗi khi người dùng đạt mục tiêu học và mở khóa CineChill, việc bấm tải lại trang (F5) hoặc chuyển tab có thể khiến giao diện kiểm tra lại từ đầu, bắt buộc người học phải học tiếp mới được vào lại rạp chiếu.
+  - **Giải pháp xử lý:**
+    - Tạo cơ chế lưu trữ timestamp mở khóa `monokuro_cinechill_unlocked_until` trong `localStorage` với thời lượng 12 tiếng liên tục (`12 * 60 * 60 * 1000 ms`).
+    - Khi người dùng học đủ mục tiêu: hệ thống lập tức cấp quyền mở khóa và lưu mốc hết hạn 12h vào thiết bị.
+    - Khi tải lại trang (F5): ngay trong pha mount đầu tiên, hệ thống kiểm tra mốc thời gian đã lưu. Nếu còn trong thời hạn 12 giờ, CineChill sẽ tự động mở khóa ngay tức khắc, không có độ trễ, không nhấp nháy thẻ khóa frosted glass.
+    - Bộ đếm thời gian thực trên thanh tiêu đề và huy hiệu đếm ngược tự động chuyển sang hiển thị thời gian mở khóa 12h còn lại (ví dụ: `ĐÃ MỞ KHÓA 12H (CÒN 11h 58m)`), tạo sự an tâm tuyệt đối cho người học.
+
+- **Nâng Cấp Mức Mục Tiêu Học Tối Thiểu Lên 10 Phút (Min 10-Minute Goal):**
+  - **Quy chuẩn mới:** Đặt giới hạn học tập tối thiểu cho rạp chiếu CineChill là **10 phút** (thay vì 1 phút như trước).
+  - Cập nhật dải phím chọn nhanh (Presets) trên cả thanh Header và thẻ kính khóa: **`[10m, 20m, 30m, 45m, 60m]`**.
+  - Ràng buộc chặn dưới `Math.max(10, ...)` trong hàm cập nhật mục tiêu `handleSetGoalMinutes` và modal nhập số phút tùy chỉnh.
+  - Tự động nâng mục tiêu cũ lên 10 phút nếu người dùng từng lưu mốc nhỏ hơn 10 phút trước đó.
+
 ---
 
 ## 🧪 5. Trạng Thái Build & Kiểm Tra Hiện Tại
 - Lệnh build: `npm run build` (Turbopack + TypeScript check)
-- Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 16/16 static pages generated trong 330ms)**.
-- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `7c60959`).
+- Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 16/16 static pages generated)**.
+- Lệnh sao lưu dự án: `npm run backup`.
 - Dev server đang chạy mượt mà tại: `http://localhost:3000`.
+
 
 
 
