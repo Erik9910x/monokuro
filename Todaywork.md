@@ -137,22 +137,25 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
 
 ---
 
-## 🎬 4. Tính Năng Mới: CineChill (Thay Thế FrameWhisper)
-- **Cơ chế Khóa 30 phút học tập:**
-  - Tự động quét `timerSessions` trong IndexedDB hôm nay để tính tổng giây đã học.
-  - Hiển thị thanh tiến trình trực quan: `Hôm nay: Xm Ys / 30m 00s`.
-  - Màn hình khóa tối giản Monokuro Padlock khi chưa đủ 30 phút học.
-  - Nút gạt **`[TEST DEMO: BẬT / TẮT]`** giúp chuyển đổi tức thì giữa trạng thái mở tự do để test và trạng thái khóa thật.
-- **Phương án A: In-App Cinema (Xem trực tiếp trong web):**
-  - Gọn 100% trong 1 tab duy nhất.
-  - Trình phát Monokuro Noir với đèn rạp Ambient Glow, tùy chỉnh mở rộng khung rạp.
-  - Catalog 5 video/phim anime chill tuyển chọn (Ghibli 4K, Makoto Shinkai, Cyberpunk Rainy Tokyo...).
-  - Hỗ trợ dán link phim YouTube hoặc video stream trực tiếp.
-- **Phương án B: Netflix Mini-Theater Pop-out (Chính chủ 100%):**
-  - Sử dụng tài khoản Netflix đã đăng nhập sẵn của bạn trên trình duyệt (an toàn tuyệt đối, không lo bot/captcha/DRM error).
-  - Mở cửa sổ Mini Cinema không viền với 3 kích thước: `S (800x480)`, `M (1040x600)`, `L (1280x740)`.
-  - Bộ điều khiển giải lao Monokuro (15p, 30p, 45p) kèm chuông Zen nhắc quay lại bàn học khi hết giờ.
-  - Danh sách phim Netflix đề xuất bấm 1-click phát ngay (Arcane, Spirited Away, Cyberpunk Edgerunners, Our Planet, Stranger Things...).
+## 🎬 4. Nâng Cấp Toàn Diện CineChill & Sửa Lỗi Hệ Thống
+- **Đổi tên & Tính năng Phương án A $\rightarrow$ VibeTube:**
+  - **Tích hợp Anti-ADs:** Tự động áp dụng cờ triệt tiêu quảng cáo và video rác (`rel=0&modestbranding=1&iv_load_policy=3&disablekb=0&playsinline=1`). Có badge kiểm định `ANTI-ADS ACTIVE (0% QUẢNG CÁO)`.
+  - **Full F11 Mode:** Nút phóng to toàn màn hình rạp chiếu điện ảnh tràn viền 100% không viền trình duyệt.
+- **Đổi tên & Tính năng Phương án B $\rightarrow$ FlixOut:**
+  - **Tích hợp sẵn tài khoản Netflix vào Web:** Thẻ *Hồ sơ tài khoản Netflix đã liên kết* (Linked Account Vault) ghi nhớ Profile và Email người dùng, nút 1-click mở thẳng Netflix.
+  - Cửa sổ Pop-out rạp chiếu không viền (S, M, L) và bộ đếm ngược giờ giải lao (15p, 30p, 45p) kèm chuông Zen nhắc học.
+- **Cinematic Blur Popup Modal (Khi chưa đủ điều kiện 30 phút):**
+  - Màn hình popup mờ ảo Cinematic Blur (`backdrop-blur-2xl`) che trọn màn hình báo *Chưa đủ điều kiện...*.
+  - Hiển thị chính xác tiến độ học hôm nay và thời gian còn thiếu.
+  - Cung cấp đúng 2 lựa chọn theo yêu cầu:
+    1. **HỌC NGAY ĐỂ MỞ KHÓA (Vào FocusX)**: Chuyển ngay đến trang học tập.
+    2. **RỜI KHỎI CINEMATIC BLUR MODE**: Đóng popup để nhìn giao diện bên dưới, nhưng toàn bộ trình phát và nút bấm vẫn bị khóa mờ (`pointer-events-none opacity-30 select-none`), hoàn toàn không được dùng.
+- **Ghi nhận thời gian học liên tục từng giây (Không mất thời gian oan uổng):**
+  - Trong `timerStore.ts`: Cập nhật `pause()`, `resume()`, và `reset()` lưu ngay số giây đã học vào `IndexedDB`. Ngay cả khi người học bấm Reset giữa chừng, số giây đã học vẫn được bảo toàn nguyên vẹn cho ngày hôm đó!
+  - Trong `CineChill`: Timer đếm nhịp mỗi 1 giây cộng dồn thời gian đang chạy từ FocusX sang CineChill theo thời gian thực (Real-time).
+- **Sửa triệt để lỗi VibraX chỉ phát nhạc 30s:**
+  - Phát hiện nguyên nhân: Link Spotify và iTunes tìm kiếm chỉ cung cấp audio preview 30s (`p.scdn.co/mp3-preview/...`), và hệ thống cũ bị chặn điều kiện `!track.audioUrl` nên không tìm bản đầy đủ.
+  - Khắc phục: Xóa bỏ rào cản, tự động tra cứu video YouTube Official Audio/Topic cho mọi bài hát thiếu `youtubeId`. Khi bài hát đang phát bản nghe thử, hệ thống tự động nâng cấp mượt mà sang bản đầy đủ của YouTube mà không bao giờ bị cắt ở giây 30.
 
 ---
 
