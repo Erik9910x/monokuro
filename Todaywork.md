@@ -127,17 +127,37 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
 ## 📁 3. Danh Sách Các File Quan Trọng Đã Thay Đổi
 - [src/types/index.ts](file:///d:/1.PROJECT%20CODE/Monokuro/src/types/index.ts): Bổ sung lưu danh sách `tracks` cho SavedMusicLink.
 - [src/lib/store/playerStore.ts](file:///d:/1.PROJECT%20CODE/Monokuro/src/lib/store/playerStore.ts): Bổ sung `playQueue`, `playTrack`, `playTrigger`, CURATED_STUDY_TRACKS 5 thể loại.
-- [src/lib/i18n/index.ts](file:///d:/1.PROJECT%20CODE/Monokuro/src/lib/i18n/index.ts): 6 ngôn ngữ quốc tế và bản dịch các tính năng mới.
-- [src/lib/music/youtube.ts](file:///d:/1.PROJECT%20CODE/Monokuro/src/lib/music/youtube.ts): Lọc sạch video rác & quảng cáo, ưu tiên YouTube Music Topic.
-- [src/app/api/music/resolve/route.ts](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/api/music/resolve/route.ts): Trích xuất sạch Spotify album & preview MP3 stream.
-- [src/components/player/BottomPlayerDock.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/player/BottomPlayerDock.tsx): Nút ẩn/hiện dock, Floating Mini Pill, badge vị trí album `1/15`.
-- [src/components/player/GlobalAudioPlayer.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/player/GlobalAudioPlayer.tsx): Cửa sổ PIP kéo thả & co giãn tự do, bộ xử lý `playTrigger` tức thì.
-- [src/components/vibrax/CatalogSearchPanel.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/vibrax/CatalogSearchPanel.tsx): Hộp tìm kiếm thông minh, lọc vibe, phát cả hàng đợi.
-- [src/app/vibrax/page.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/vibrax/page.tsx): Nút chơi toàn bộ album, liên kết `handlePlaySavedLink` với `playQueue`.
+- [src/lib/storage/index.ts](file:///d:/1.PROJECT%20CODE/Monokuro/src/lib/storage/index.ts): Bổ sung hàm tính thời gian học hôm nay `getTodayStudyStats` chính xác từng giây để mở khóa CineChill.
+- [src/lib/i18n/index.ts](file:///d:/1.PROJECT%20CODE/Monokuro/src/lib/i18n/index.ts): 6 ngôn ngữ quốc tế và bản dịch các tính năng mới + CineChill.
+- [src/components/app-shell/AppShell.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/app-shell/AppShell.tsx): Cập nhật menu điều hướng thay thế FrameWhisper bằng CineChill (icon Film).
+- [src/app/page.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/page.tsx): Cập nhật thẻ Module 03 trên trang chủ thành CineChill.
+- [src/app/cinechill/page.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/cinechill/page.tsx): Không gian rạp phim CineChill hỗ trợ cả 2 phương án test (A: In-App Cinema, B: Netflix Mini-Theater Pop-out + Bộ đếm giờ giải lao Monokuro), khóa sau 30 phút học và nút gạt Test Demo.
+- [src/app/framewhisper/page.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/framewhisper/page.tsx): Chuyển tiếp tự động sang CineChill.
+- [scripts/backup.mjs](file:///d:/1.PROJECT%20CODE/Monokuro/scripts/backup.mjs): Lệnh sao lưu nhanh `npm run backup` tạo snapshot Git và thư mục lưu trữ.
 
 ---
 
-## 🧪 4. Trạng Thái Build & Kiểm Tra Hiện Tại
+## 🎬 4. Tính Năng Mới: CineChill (Thay Thế FrameWhisper)
+- **Cơ chế Khóa 30 phút học tập:**
+  - Tự động quét `timerSessions` trong IndexedDB hôm nay để tính tổng giây đã học.
+  - Hiển thị thanh tiến trình trực quan: `Hôm nay: Xm Ys / 30m 00s`.
+  - Màn hình khóa tối giản Monokuro Padlock khi chưa đủ 30 phút học.
+  - Nút gạt **`[TEST DEMO: BẬT / TẮT]`** giúp chuyển đổi tức thì giữa trạng thái mở tự do để test và trạng thái khóa thật.
+- **Phương án A: In-App Cinema (Xem trực tiếp trong web):**
+  - Gọn 100% trong 1 tab duy nhất.
+  - Trình phát Monokuro Noir với đèn rạp Ambient Glow, tùy chỉnh mở rộng khung rạp.
+  - Catalog 5 video/phim anime chill tuyển chọn (Ghibli 4K, Makoto Shinkai, Cyberpunk Rainy Tokyo...).
+  - Hỗ trợ dán link phim YouTube hoặc video stream trực tiếp.
+- **Phương án B: Netflix Mini-Theater Pop-out (Chính chủ 100%):**
+  - Sử dụng tài khoản Netflix đã đăng nhập sẵn của bạn trên trình duyệt (an toàn tuyệt đối, không lo bot/captcha/DRM error).
+  - Mở cửa sổ Mini Cinema không viền với 3 kích thước: `S (800x480)`, `M (1040x600)`, `L (1280x740)`.
+  - Bộ điều khiển giải lao Monokuro (15p, 30p, 45p) kèm chuông Zen nhắc quay lại bàn học khi hết giờ.
+  - Danh sách phim Netflix đề xuất bấm 1-click phát ngay (Arcane, Spirited Away, Cyberpunk Edgerunners, Our Planet, Stranger Things...).
+
+---
+
+## 🧪 5. Trạng Thái Build & Kiểm Tra Hiện Tại
 - Lệnh build: `npm run build` (Turbopack + TypeScript check)
-- Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 14/14 static pages generated)**.
-- Dev server đang chạy ổn định tại: `http://localhost:3000`.
+- Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 15/15 static pages generated)**.
+- Lệnh sao lưu dự án: `npm run backup` (hoặc `node scripts/backup.mjs`)
+- Dev server đang chạy ổn định tại: `http://localhost:3000/cinechill`.
