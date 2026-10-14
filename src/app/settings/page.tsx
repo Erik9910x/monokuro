@@ -110,9 +110,9 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+    <div suppressHydrationWarning className="flex-1 flex flex-col max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
       {/* HEADER */}
-      <div className="border-b border-white/10 pb-6">
+      <div suppressHydrationWarning className="border-b border-white/10 pb-6">
         <div className="flex items-center gap-2 mb-1">
           <span className="font-mono text-xs text-zinc-500 uppercase tracking-widest">
             SETTINGS & DATA

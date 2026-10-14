@@ -119,14 +119,15 @@ export default function FocusXPage() {
 
   return (
     <div
+      suppressHydrationWarning
       className={`flex-1 flex flex-col items-center justify-center p-4 sm:p-8 transition-all duration-300 ${
         isFocusModeActive ? 'py-16' : ''
       }`}
     >
-      <div className="w-full max-w-3xl flex flex-col items-center text-center space-y-8">
+      <div suppressHydrationWarning className="w-full max-w-3xl flex flex-col items-center text-center space-y-8">
         {/* Module Header & Mode Switcher */}
         {!isFocusModeActive && (
-          <div className="space-y-4">
+          <div suppressHydrationWarning className="space-y-4">
             <div className="flex items-center justify-center gap-2">
               <button
                 onClick={() => setMode('focus')}

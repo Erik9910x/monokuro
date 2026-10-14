@@ -222,18 +222,18 @@ export default function VibraXPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div suppressHydrationWarning className="flex-1 flex flex-col max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* TOP HEADER: Module Title & URL Import */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
+      <div suppressHydrationWarning className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-white/10 pb-6">
+        <div suppressHydrationWarning>
+          <div suppressHydrationWarning className="flex items-center gap-2 mb-1">
             <span className="font-mono text-xs text-zinc-500 uppercase tracking-widest">
               MODULE 02
             </span>
             <span className="text-zinc-600">/</span>
             <span className="font-mono text-xs text-zinc-300">VIBRAX</span>
           </div>
-          <h1 className="text-2xl font-light font-mono text-white">{t('vibrax_title')}</h1>
+          <h1 suppressHydrationWarning className="text-2xl font-light font-mono text-white">{t('vibrax_title')}</h1>
         </div>
 
         {/* Universal Music Link Importer (debug.md §2) */}

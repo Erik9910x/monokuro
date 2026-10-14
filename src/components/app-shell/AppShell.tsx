@@ -42,6 +42,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setIsMounted(true);
+    useLanguageStore.getState().initLanguage();
     try {
       const origSet = Element.prototype.setAttribute;
       Element.prototype.setAttribute = function (name, val) {
