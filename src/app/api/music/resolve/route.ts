@@ -115,8 +115,8 @@ async function resolveAppleMusic(url: URL, originalUrl: string) {
   }
 
   try {
-    // If song ID, lookup song directly
-    const itunesUrl = `https://itunes.apple.com/lookup?id=${targetId}&entity=song`;
+    // If song ID, lookup song directly (up to 50 tracks for albums)
+    const itunesUrl = `https://itunes.apple.com/lookup?id=${targetId}&entity=song&limit=50`;
     const res = await fetch(itunesUrl, { next: { revalidate: 3600 } });
 
     if (!res.ok) {
@@ -154,7 +154,7 @@ async function resolveAppleMusic(url: URL, originalUrl: string) {
     const isAlbum = data.results.length > 1 && data.results[0].wrapperType === 'collection';
     const mainItem = data.results[0];
 
-    const tracks: ResolvedTrack[] = (isAlbum ? data.results.slice(1) : data.results).map((r: any) => {
+    const tracks: ResolvedTrack[] = (isAlbum ? data.results.slice(1, 51) : data.results).map((r: any) => {
       const highResArt = r.artworkUrl100
         ? r.artworkUrl100.replace('100x100bb.jpg', '600x600bb.jpg')
         : '';
@@ -268,7 +268,7 @@ async function resolveSpotify(url: URL, originalUrl: string) {
               artist = entity.artists?.[0]?.name || entity.trackList[0]?.subtitle || 'Spotify Artist';
               thumbnail = entity.visualIdentity?.image?.[0]?.url || thumbnail;
 
-              for (const [idx, item] of entity.trackList.slice(0, 15).entries()) {
+              for (const [idx, item] of entity.trackList.slice(0, 50).entries()) {
                 const itemTitle = item.title || item.name || 'Track ' + (idx + 1);
                 const itemArtist = item.subtitle || artist;
                 const itemPreview = item.audioPreview?.url || null;

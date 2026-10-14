@@ -11,11 +11,8 @@ import {
   Maximize2,
   Minimize2,
   Tv,
-  Sliders,
   Timer,
   Clapperboard,
-  ShieldCheck,
-  Monitor,
   Target,
   Edit3,
   X,
@@ -24,6 +21,8 @@ import {
   Crown,
   CheckCircle2,
   Film,
+  Eye,
+  Clock,
 } from 'lucide-react';
 import { useTimerStore } from '@/lib/store/timerStore';
 import { getCompletedStudySecondsToday } from '@/lib/storage';
@@ -49,7 +48,8 @@ const FALLBACK_INITIAL_VIDEOS: YouTubeVideoItem[] = [
     channel: 'Ghibli Vibes',
     duration: '1:30:15',
     thumbnail: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80',
-    views: '2.4M views',
+    views: '2.4M lượt xem',
+    publishedTime: '1 năm trước',
   },
   {
     id: 'q76bMs-NwRk',
@@ -57,7 +57,8 @@ const FALLBACK_INITIAL_VIDEOS: YouTubeVideoItem[] = [
     channel: 'Cinematic Moods',
     duration: '45:20',
     thumbnail: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80',
-    views: '1.8M views',
+    views: '1.8M lượt xem',
+    publishedTime: '2 năm trước',
   },
   {
     id: 'sFzT1fFvUu8',
@@ -65,7 +66,8 @@ const FALLBACK_INITIAL_VIDEOS: YouTubeVideoItem[] = [
     channel: 'Nomadic Ambience',
     duration: '1:00:00',
     thumbnail: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800&auto=format&fit=crop&q=80',
-    views: '4.1M views',
+    views: '4.1M lượt xem',
+    publishedTime: '11 tháng trước',
   },
   {
     id: '1zNwgI3w_n0',
@@ -73,7 +75,8 @@ const FALLBACK_INITIAL_VIDEOS: YouTubeVideoItem[] = [
     channel: 'Space Ambience',
     duration: '2:15:40',
     thumbnail: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=80',
-    views: '3.2M views',
+    views: '3.2M lượt xem',
+    publishedTime: '8 tháng trước',
   },
   {
     id: 'eZe4QnHArCE',
@@ -81,7 +84,8 @@ const FALLBACK_INITIAL_VIDEOS: YouTubeVideoItem[] = [
     channel: 'Calm Nature Café',
     duration: '1:10:00',
     thumbnail: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&auto=format&fit=crop&q=80',
-    views: '950K views',
+    views: '950K lượt xem',
+    publishedTime: '5 tháng trước',
   },
   {
     id: 'jfKfPfyJRdk',
@@ -89,7 +93,8 @@ const FALLBACK_INITIAL_VIDEOS: YouTubeVideoItem[] = [
     channel: 'Lofi Girl',
     duration: 'Live',
     thumbnail: 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=800&auto=format&fit=crop&q=80',
-    views: 'Live',
+    views: '24K đang xem',
+    publishedTime: 'Đang phát trực tiếp',
   },
 ];
 
@@ -108,7 +113,6 @@ export default function CineChillPage() {
   const [countdownDisplay, setCountdownDisplay] = useState('30:00');
   const [progressPercent, setProgressPercent] = useState(0);
   const [isUnlocked, setIsUnlocked] = useState(false);
-  const [demoBypass, setDemoBypass] = useState(false);
 
   // Base past seconds from IndexedDB
   const basePastSecondsRef = useRef<number>(0);
@@ -363,7 +367,8 @@ export default function CineChillPage() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  const isAccessAllowed = demoBypass || isUnlocked;
+  // Strict Lock Evaluation: Only opens when goal minutes are reached
+  const isAccessAllowed = isUnlocked;
   const currentEmbedUrl = `https://www.youtube.com/embed/${currentVideoId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`;
 
   return (
@@ -386,7 +391,7 @@ export default function CineChillPage() {
               {isAccessAllowed ? (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   <Unlock className="h-3 w-3" />
-                  {demoBypass ? 'DEMO TEST: ĐANG MỞ KHÓA' : 'ĐÃ ĐỦ ĐIỀU KIỆN (MỞ KHÓA)'}
+                  ĐÃ ĐỦ ĐIỀU KIỆN (MỞ KHÓA)
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -495,22 +500,9 @@ export default function CineChillPage() {
               </div>
             </div>
 
-            {/* Demo Toggle Button */}
-            <button
-              onClick={() => setDemoBypass(!demoBypass)}
-              className={`px-3 py-2 rounded-xl text-xs font-mono transition-all flex items-center justify-center gap-2 border cursor-pointer ${
-                demoBypass
-                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
-                  : 'bg-white/5 text-zinc-400 border-white/10 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              <Sliders className="h-3.5 w-3.5" />
-              <span>TEST DEMO: {demoBypass ? 'BẬT (Mở khóa)' : 'TẮT (Khóa thật)'}</span>
-            </button>
-
             <Link
               href="/focusx"
-              className="px-3.5 py-2 rounded-xl text-xs font-mono bg-white text-black hover:bg-zinc-200 transition-colors flex items-center justify-center gap-1.5 shadow-sm font-semibold"
+              className="px-4 py-2.5 rounded-xl text-xs font-mono bg-white text-black hover:bg-zinc-200 transition-colors flex items-center justify-center gap-1.5 shadow-sm font-semibold"
             >
               <Timer className="h-3.5 w-3.5" />
               <span>VÀO HỌC BẤM GIỜ</span>
@@ -592,52 +584,108 @@ export default function CineChillPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+              <div className="flex items-center justify-center pt-2">
                 <Link
                   href="/focusx"
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white text-black font-mono text-xs font-bold hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2 shadow"
+                  className="px-6 py-2.5 rounded-xl bg-white text-black font-mono text-xs font-bold hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2 shadow"
                 >
                   <Timer className="h-3.5 w-3.5" />
                   <span>VÀO FOCUSX HỌC NGAY</span>
                 </Link>
-
-                <button
-                  onClick={() => setDemoBypass(true)}
-                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-white/15 text-zinc-300 hover:text-white font-mono text-xs transition-colors cursor-pointer"
-                >
-                  Bật Demo Test Để Trải Nghiệm →
-                </button>
               </div>
             </div>
           )}
 
           {/* Actual VibeTube Theater Deck */}
           <div className={!isAccessAllowed ? 'pointer-events-none opacity-30 select-none' : 'space-y-6'}>
-            {/* VibeTube Method Header Bar */}
-            <div className="liquid-pill rounded-xl p-3.5 text-xs font-mono text-zinc-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="font-semibold text-white">VibeTube In-Room:</span>
-                <span>Tìm & xem YouTube trực tiếp với chuẩn hình ảnh sắc nét và âm thanh liền mạch.</span>
+            
+            {/* ======================================================== */}
+            {/* 1. REMARKABLE IN-ROOM YOUTUBE SEARCH HUB (PLACED ON TOP) */}
+            {/* ======================================================== */}
+            <div className="liquid-glass-card rounded-2xl p-5 border border-white/20 bg-gradient-to-b from-white/[0.07] to-white/[0.02] shadow-[0_10px_35px_rgba(0,0,0,0.6)] space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <Search className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-mono text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                      <span>VIBETUBE SEARCH & DISCOVERY HUB</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                        DIRECT YOUTUBE
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-zinc-400 font-mono">
+                      Tìm bất kỳ phim, video, ambiance hoặc dán link/ID YouTube xem ngay không cần mở tab ngoài.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  {isPremiumSaved ? 'YTB PREMIUM (ZERO ADS)' : 'ANTI-ADS FILTER ACTIVE'}
-                </span>
+              {/* Remarkable Search Form Input */}
+              <form onSubmit={handleSearchSubmit} className="flex gap-2.5">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Tìm phim, cảnh mưa anime, nhạc lofi, vũ trụ, khoa học hoặc dán link YouTube..."
+                    className="w-full h-12 rounded-xl bg-black/50 border border-white/20 pl-11 pr-10 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-white focus:bg-black/70 transition-all font-mono shadow-inner"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-white"
+                      title="Xóa tìm kiếm"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
 
                 <button
-                  onClick={toggleF11Mode}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20 text-[10px] transition-colors cursor-pointer"
+                  type="submit"
+                  disabled={isSearching || !searchQuery.trim()}
+                  className="h-12 px-6 rounded-xl bg-white text-black font-mono text-xs sm:text-sm font-bold hover:bg-zinc-200 transition-all shrink-0 flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md active:scale-95"
                 >
-                  <Monitor className="h-3.5 w-3.5" />
-                  <span>{isF11Fullscreen ? 'THOÁT F11' : 'FULL F11 RẠP PHIM'}</span>
+                  {isSearching ? <Loader2 className="h-4 w-4 animate-spin text-black" /> : <Search className="h-4 w-4 text-black" />}
+                  <span>{isSearching ? 'ĐANG TÌM...' : 'TÌM YOUTUBE'}</span>
                 </button>
+              </form>
+
+              {/* Quick Vibe Exploration Pills */}
+              <div className="space-y-1.5 pt-1">
+                <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <Sparkles className="h-3 w-3 text-amber-400" />
+                  <span>GỢI Ý CHỦ ĐỀ CHILL NHANH (1-CLICK DISCOVERY):</span>
+                </div>
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none font-mono text-xs">
+                  {QUICK_VIBE_CATEGORIES.map((cat) => {
+                    const isSelected = activeCategory === cat.label;
+                    return (
+                      <button
+                        key={cat.label}
+                        type="button"
+                        onClick={() => handleSelectCategory(cat)}
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-mono transition-all shrink-0 cursor-pointer ${
+                          isSelected
+                            ? 'bg-white text-black font-bold shadow-sm'
+                            : 'border border-white/10 bg-white/[0.03] text-zinc-300 hover:text-white hover:border-white/30'
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            {/* Theater Video Frame Deck */}
+            {/* ======================================================== */}
+            {/* 2. THEATER VIDEO FRAME DECK                              */}
+            {/* ======================================================== */}
             <div ref={theaterDeckRef} className="relative mx-auto max-w-5xl transition-all duration-300">
               {/* Ambient Glow Light behind Video */}
               {ambientGlow && (
@@ -711,150 +759,109 @@ export default function CineChillPage() {
             </div>
 
             {/* ======================================================== */}
-            {/* IN-ROOM DIRECT YOUTUBE DISCOVERY & SEARCH BAR             */}
+            {/* 3. VIDEO SEARCH RESULTS (WITH VIEWS & LATEST PUSH TIME)  */}
             {/* ======================================================== */}
             <div className="liquid-glass-card rounded-2xl p-5 border-white/10 space-y-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <Tv className="h-4 w-4 text-emerald-400" />
                   <h3 className="font-mono text-xs sm:text-sm font-semibold text-white uppercase tracking-wider">
-                    KHÁM PHÁ & TÌM KIẾM YOUTUBE TRỰC TIẾP TẠI CHỖ
+                    KẾT QUẢ VIDEO TRỰC TUYẾN ({searchResults.length})
                   </h3>
                 </div>
-                <span className="text-[11px] font-mono text-zinc-500">
-                  Gõ từ khóa bất kỳ hoặc dán link/ID video để xem ngay
-                </span>
-              </div>
-
-              {/* Search Form */}
-              <form onSubmit={handleSearchSubmit} className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tìm phim, cảnh mưa anime, nhạc lofi, vũ trụ, khoa học trên YouTube..."
-                    className="w-full rounded-xl bg-white/[0.04] border border-white/10 pl-10 pr-9 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/30 transition-all font-mono"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-zinc-500 hover:text-white"
-                      title="Xóa tìm kiếm"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-                <button
-                  type="submit"
-                  disabled={isSearching || !searchQuery.trim()}
-                  className="px-5 py-2.5 rounded-xl bg-white text-black font-mono text-xs font-semibold hover:bg-zinc-200 transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                >
-                  {isSearching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
-                  <span>{isSearching ? 'ĐANG TÌM...' : 'TÌM YOUTUBE'}</span>
-                </button>
-              </form>
-
-              {/* Quick Vibe Exploration Pills */}
-              <div className="space-y-1.5 pt-1">
-                <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                  GỢI Ý CHỦ ĐỀ CHILL NHANH (1-CLICK DISCOVERY):
-                </div>
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none font-mono text-xs">
-                  {QUICK_VIBE_CATEGORIES.map((cat) => {
-                    const isSelected = activeCategory === cat.label;
-                    return (
-                      <button
-                        key={cat.label}
-                        type="button"
-                        onClick={() => handleSelectCategory(cat)}
-                        className={`px-3 py-1.5 rounded-full text-[11px] font-mono transition-all shrink-0 cursor-pointer ${
-                          isSelected
-                            ? 'bg-white text-black font-bold shadow-sm'
-                            : 'border border-white/10 bg-white/[0.02] text-zinc-400 hover:text-white hover:border-white/20'
-                        }`}
-                      >
-                        {cat.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                {isSearching ? (
+                  <span className="text-[11px] font-mono text-amber-300 animate-pulse flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Đang tìm video mới nhất trên YouTube...
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-mono text-zinc-500">
+                    Bấm bất kỳ video nào để chiếu ngay trên màn hình lớn
+                  </span>
+                )}
               </div>
 
               {/* Video Results Grid */}
-              <div className="pt-2">
-                <div className="flex items-center justify-between mb-3 text-[11px] font-mono text-zinc-500">
-                  <span>KẾT QUẢ VIDEO TRỰC TUYẾN ({searchResults.length})</span>
-                  {isSearching && <span className="text-zinc-400 animate-pulse">Đang tải kết quả từ YouTube...</span>}
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+                {searchResults.map((video) => {
+                  const isPlaying = currentVideoId === video.id;
+                  return (
+                    <div
+                      key={video.id}
+                      onClick={() => handlePlayVideo(video)}
+                      className={`group cursor-pointer rounded-2xl p-3 border transition-all duration-200 flex flex-col justify-between ${
+                        isPlaying
+                          ? 'bg-white/[0.08] border-white/40 shadow-lg'
+                          : 'bg-white/[0.02] border-white/10 hover:border-white/25 hover:-translate-y-0.5'
+                      }`}
+                    >
+                      <div className="space-y-2.5">
+                        <div className="relative aspect-video rounded-xl overflow-hidden bg-zinc-900">
+                          <img
+                            src={video.thumbnail}
+                            alt={video.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-80 group-hover:opacity-100"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                          
+                          {/* Duration Badge */}
+                          <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-[10px] font-mono bg-black/80 text-white border border-white/10">
+                            {video.duration}
+                          </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {searchResults.map((video) => {
-                    const isPlaying = currentVideoId === video.id;
-                    return (
-                      <div
-                        key={video.id}
-                        onClick={() => handlePlayVideo(video)}
-                        className={`group cursor-pointer rounded-2xl p-3 border transition-all duration-200 flex flex-col justify-between ${
-                          isPlaying
-                            ? 'bg-white/[0.08] border-white/40 shadow-lg'
-                            : 'bg-white/[0.02] border-white/10 hover:border-white/25 hover:-translate-y-0.5'
-                        }`}
-                      >
-                        <div className="space-y-2.5">
-                          <div className="relative aspect-video rounded-xl overflow-hidden bg-zinc-900">
-                            <img
-                              src={video.thumbnail}
-                              alt={video.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-80 group-hover:opacity-100"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                            <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-[10px] font-mono bg-black/80 text-white border border-white/10">
-                              {video.duration}
-                            </span>
+                          {/* Playing Status Badge */}
+                          {isPlaying && (
+                            <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-mono bg-white text-black font-semibold flex items-center gap-1 shadow">
+                              <Play className="h-2.5 w-2.5 fill-current" />
+                              ĐANG CHIẾU
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <h4 className="text-xs font-mono font-medium text-white group-hover:text-zinc-200 line-clamp-2 leading-snug">
+                            {video.title}
+                          </h4>
+
+                          <p className="text-[11px] text-zinc-400 font-mono truncate">
+                            {video.channel}
+                          </p>
+
+                          {/* Views Count and Latest Push Time (Required) */}
+                          <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-[10px] text-zinc-400 border-t border-white/5">
                             {video.views && (
-                              <span className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded text-[10px] font-mono bg-black/70 text-zinc-300">
-                                {video.views}
+                              <span className="flex items-center gap-1 text-zinc-300">
+                                <Eye className="h-3 w-3 text-zinc-500" />
+                                <span>{video.views}</span>
                               </span>
                             )}
-                            {isPlaying && (
-                              <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-mono bg-white text-black font-semibold flex items-center gap-1 shadow">
-                                <Play className="h-2.5 w-2.5 fill-current" />
-                                ĐANG CHIẾU
-                              </div>
+
+                            {video.publishedTime && (
+                              <span className="flex items-center gap-1 text-zinc-400">
+                                <Clock className="h-3 w-3 text-zinc-500" />
+                                <span>{video.publishedTime}</span>
+                              </span>
                             )}
                           </div>
-
-                          <div className="space-y-1">
-                            <h4 className="text-xs font-mono font-medium text-white group-hover:text-zinc-200 line-clamp-2 leading-snug">
-                              {video.title}
-                            </h4>
-                            <p className="text-[11px] text-zinc-500 font-mono truncate">
-                              {video.channel}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="pt-3">
-                          <button
-                            type="button"
-                            className={`w-full py-1.5 px-3 rounded-xl font-mono text-[11px] flex items-center justify-center gap-1.5 transition-colors ${
-                              isPlaying
-                                ? 'bg-white text-black font-bold'
-                                : 'bg-white/5 text-zinc-300 group-hover:bg-white group-hover:text-black'
-                            }`}
-                          >
-                            <Play className="h-3 w-3 fill-current" />
-                            <span>{isPlaying ? 'ĐANG PHÁT TRÊN RẠP' : 'CHIẾU NGAY'}</span>
-                          </button>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+
+                      <div className="pt-3">
+                        <button
+                          type="button"
+                          className={`w-full py-1.5 px-3 rounded-xl font-mono text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                            isPlaying
+                              ? 'bg-white text-black font-bold'
+                              : 'bg-white/5 text-zinc-300 group-hover:bg-white group-hover:text-black'
+                          }`}
+                        >
+                          <Play className="h-3 w-3 fill-current" />
+                          <span>{isPlaying ? 'ĐANG PHÁT TRÊN RẠP' : 'CHIẾU NGAY'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

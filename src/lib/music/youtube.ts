@@ -163,8 +163,16 @@ export async function searchYouTubeVideos(query: string, limit = 16): Promise<Yo
               vr.longBylineText?.runs?.map((r: any) => r.text).join('') ||
               'YouTube Channel';
             const duration = vr.lengthText?.simpleText || 'HD';
-            const views = vr.viewCountText?.simpleText || vr.shortViewCountText?.simpleText || '';
-            const publishedTime = vr.publishedTimeText?.simpleText || '';
+            const views =
+              vr.viewCountText?.simpleText ||
+              vr.shortViewCountText?.simpleText ||
+              vr.viewCountText?.runs?.map((r: any) => r.text).join('') ||
+              vr.shortViewCountText?.runs?.map((r: any) => r.text).join('') ||
+              '';
+            const publishedTime =
+              vr.publishedTimeText?.simpleText ||
+              vr.publishedTimeText?.runs?.map((r: any) => r.text).join('') ||
+              '';
             const thumbnail =
               vr.thumbnail?.thumbnails?.slice(-1)[0]?.url ||
               `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
