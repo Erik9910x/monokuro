@@ -270,13 +270,19 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
 
     - Tạo module [src/lib/suppress-extension-noise.ts](file:///d:/1.PROJECT%20CODE/Monokuro/src/lib/suppress-extension-noise.ts) nạp ngay ở đầu Client bundle: Tự động gỡ bỏ thuộc tính `bis_skin_checked` trước khi React hydration kích hoạt, đồng thời bọc `console.error` để triệt tiêu toàn bộ cảnh báo thuộc tính DOM sinh ra bởi các tiện ích an ninh trình duyệt như Bitdefender TrafficLight.
 
+- **Đồng Bộ & Đẩy Toàn Bộ Dự Án Lên GitHub (Git Push to Origin):**
+  - Kết nối remote kho lưu trữ GitHub chính thức: `https://github.com/Erik9910x/monokuro.git`.
+  - Chuyển nhánh mặc định sang `main` (`git branch -M main`).
+  - Đã đẩy (push) thành công 100% toàn bộ source code sạch lên `origin/main`.
+
 ---
 
 ## 🧪 5. Trạng Thái Build & Kiểm Tra Hiện Tại
 - Lệnh build: `npm run build` (Turbopack + TypeScript check)
 - Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 16/16 static pages generated)**.
-- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `5c96444`).
+- GitHub Repository: [https://github.com/Erik9910x/monokuro](https://github.com/Erik9910x/monokuro) (Nhánh `main` đã đồng bộ hoàn tất).
 - Dev server đang chạy mượt mà tại: `http://localhost:3000`.
+
 
 
 
