@@ -156,15 +156,36 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
     - Khi đạt mốc 30 phút: Tự động về `00:00` và mở khóa toàn bộ rạp chiếu CineChill ngay lập tức.
 - **Ghi nhận thời gian học liên tục từng giây (Không mất thời gian oan uổng):**
   - Trong `timerStore.ts`: Cập nhật `pause()`, `resume()`, và `reset()` lưu ngay số giây đã học vào `IndexedDB`. Ngay cả khi người học bấm Reset giữa chừng, số giây đã học vẫn được bảo toàn nguyên vẹn cho ngày hôm đó!
-  - Trong `CineChill`: Timer đếm nhịp mỗi 1 giây cộng dồn thời gian đang chạy từ FocusX sang CineChill theo thời gian thực (Real-time).
+  - Trong `CineChill`: Timer đếm nhịp mỗi 200ms đọc trực tiếp từ `useTimerStore.getState()` tính toán chính xác tuyệt đối thời gian đã trôi qua trong phiên hiện tại.
 - **Sửa triệt để lỗi VibraX chỉ phát nhạc 30s:**
-  - Phát hiện nguyên nhân: Link Spotify và iTunes tìm kiếm chỉ cung cấp audio preview 30s (`p.scdn.co/mp3-preview/...`), và hệ thống cũ bị chặn điều kiện `!track.audioUrl` nên không tìm bản đầy đủ.
-  - Khắc phục: Xóa bỏ rào cản, tự động tra cứu video YouTube Official Audio/Topic cho mọi bài hát thiếu `youtubeId`. Khi bài hát đang phát bản nghe thử, hệ thống tự động nâng cấp mượt mà sang bản đầy đủ của YouTube mà không bao giờ bị cắt ở giây 30.
+  - Phát hiện nguyên nhân: Link Spotify và iTunes tìm kiếm chỉ cung cấp audio preview 30s (`p.scdn.co/mp3-preview/...`).
+  - Khắc phục: Nâng cấp `src/lib/music/youtube.ts` với cơ chế tìm kiếm 2 tầng (kèm 'official audio' và fallback nguyên bản), tăng timeout lên 6000ms.
+  - Khi bài hát đang phát preview HTML5, hệ thống tự động tìm YouTube và chuyển giao âm thanh mượt mà sang bản Full độ dài chuẩn 3-5 phút không ngắt quãng.
+- **Sửa Lỗi Nút Replay & Triệt Tiêu 100% Hiện Tượng 2 Bài Chồng Lên Nhau (HUGE ALERT):**
+  - **Nguyên nhân gốc rễ 1:** Trong `GlobalAudioPlayer.tsx`, Section B (HTML5 Audio) trước đây KHÔNG bao giờ dừng/pause YouTube Player. Do đó khi chuyển từ YouTube sang bài HTML5, cả 2 bài đều đồng thời phát âm thanh đè lên nhau.
+  - **Nguyên nhân gốc rễ 2:** Khi bấm Replay cùng bài hát, YouTube Iframe gọi `playVideo()` mà không gọi `seekTo(0, true)`. Vì video đã nằm ở cuối thời lượng (`duration`), YouTube lập tức phát sinh sự kiện `ENDED (0)`.
+  - **Nguyên nhân gốc rễ 3:** Sự kiện `ENDED` kích hoạt `notifyMediaEnded()`, khiến hàm này tự động gọi `next()` nhảy sang bài hát kế tiếp trong hàng đợi.
+  - **Giải pháp xử lý:**
+    - Thiết lập cơ chế **Độc quyền phát (Strict Mutual Exclusion)**: Khi YouTube phát thì dừng và gỡ sạch `src` của HTML5 Audio; khi HTML5 Audio phát thì lập tức gọi `ytPlayerRef.current.stopVideo()` và ngắt mọi luồng âm thanh YouTube.
+    - Bổ sung hành động `replayCurrentTrack()` trong `playerStore.ts` reset `progress: 0`, `playTrigger: Date.now()`.
+    - Khi Replay bài hát hiện tại, YouTube luôn luôn gọi `seekTo(0, true)` trước khi phát lại từ 0:00.
+    - Cập nhật `notifyMediaEnded()`: khi `repeatMode === 'one'`, gọi `replayCurrentTrack()` phát lại bài hiện tại thay vì nhảy sang bài khác.
+    - Cập nhật nút lặp lại (`toggleRepeat`) và nút lùi bài (`previous` / `SkipBack`) hiển thị rõ trạng thái: khi đã nghe quá 1 giây bấm nút lùi sẽ Replay bài hát này từ 0:00.
+- **Bộ Đếm Lùi Đồng Bộ Tuyệt Đối Với FocusX (Countdown Synchronized):**
+  - Công thức tính thời gian đếm lùi: `countdown = Math.max(0, GoalSeconds - (basePastSeconds + liveCurrentSessionSecs))`.
+  - Ví dụ thực tế: Chạy phiên Pomodoro 1h (60 phút). Khi FocusX lùi 1 giây từ `60:00` xuống `59:59`, bên CineChill mốc 30 phút cũng lập tức lùi 1 giây từ `30:00` xuống `29:59` hoàn toàn đồng bộ theo thời gian thực (tần số 200ms).
+- **Thêm Tính Năng: Chỉnh Thời Gian Mở Khóa CineChill (GOAL OF THE DAY):**
+  - Cho phép người dùng tùy chọn mục tiêu học tập trong ngày để mở khóa rạp chiếu CineChill:
+    - Các mốc có sẵn (Presets): **15 phút**, **30 phút** (mặc định), **45 phút**, **60 phút**.
+    - Nút **Tùy Chỉnh (Custom Goal)**: Hộp thoại nhập bất kỳ số phút nào từ 1 đến 240 phút.
+  - Lưu trạng thái vào `localStorage('monokuro_cinechill_goal_minutes')`.
+  - Cập nhật linh hoạt toàn bộ giao diện: thanh tiến trình, nhãn đếm ngược, và thông điệp trên thẻ khóa (*"Hãy học đủ X phút để kích hoạt toàn bộ rạp chiếu"*).
+  - Có sẵn thanh đổi mục tiêu nhanh ngay trên thẻ kính mờ đang khóa.
 
 ---
 
 ## 🧪 5. Trạng Thái Build & Kiểm Tra Hiện Tại
 - Lệnh build: `npm run build` (Turbopack + TypeScript check)
 - Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 15/15 static pages generated)**.
-- Lệnh sao lưu dự án: `npm run backup` (hoặc `node scripts/backup.mjs`)
+- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn).
 - Dev server đang chạy ổn định tại: `http://localhost:3000/cinechill`.
