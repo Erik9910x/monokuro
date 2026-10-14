@@ -64,6 +64,47 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       };
       clean();
     } catch {}
+
+    // Suppress unhandled errors/rejections from buggy third-party browser extensions (e.g. Urban VPN, adblockers)
+    const handleRejection = (e: PromiseRejectionEvent) => {
+      const reason = e.reason;
+      const stack = typeof reason === 'string' ? reason : reason?.stack || '';
+      const message = typeof reason === 'string' ? reason : reason?.message || '';
+      if (
+        stack.includes('chrome-extension://') ||
+        stack.includes('moz-extension://') ||
+        message.includes('M_ID') ||
+        stack.includes('eppiocemhmnlbhjplcgkofciiegomcon')
+      ) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    };
+
+    const handleError = (e: ErrorEvent) => {
+      const filename = e.filename || '';
+      const stack = e.error?.stack || '';
+      const message = e.message || '';
+      if (
+        filename.includes('chrome-extension://') ||
+        filename.includes('moz-extension://') ||
+        stack.includes('chrome-extension://') ||
+        stack.includes('moz-extension://') ||
+        message.includes('M_ID') ||
+        stack.includes('eppiocemhmnlbhjplcgkofciiegomcon')
+      ) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    };
+
+    window.addEventListener('unhandledrejection', handleRejection, true);
+    window.addEventListener('error', handleError, true);
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleRejection, true);
+      window.removeEventListener('error', handleError, true);
+    };
   }, []);
 
   // Monotonic wall-clock timer ticker
