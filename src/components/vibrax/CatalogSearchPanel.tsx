@@ -148,7 +148,7 @@ export default function CatalogSearchPanel() {
     : CURATED_STUDY_TRACKS.filter((t) => t.genre === selectedGenre);
 
   return (
-    <div className="flex-1 flex flex-col p-4 overflow-hidden space-y-3.5">
+    <div suppressHydrationWarning className="flex-1 flex flex-col p-4 overflow-hidden space-y-3.5">
       {/* 1. MUSIC APP SMART SEARCH BOX */}
       <form onSubmit={handleFormSubmit} className="relative flex gap-2 items-center">
         <div className="relative flex-1">

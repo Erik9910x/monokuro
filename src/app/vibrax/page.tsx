@@ -21,7 +21,7 @@ import {
   Sparkles,
   Tv,
 } from 'lucide-react';
-import { usePlayerStore, PlayerTrack } from '@/lib/store/playerStore';
+import { usePlayerStore, PlayerTrack, CURATED_STUDY_TRACKS } from '@/lib/store/playerStore';
 import { useLanguageStore } from '@/lib/store/languageStore';
 import { saveMusicLink, listMusicLinks, deleteMusicLink } from '@/lib/storage';
 import { SavedMusicLink } from '@/types';
@@ -64,11 +64,14 @@ export default function VibraXPage() {
   const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null);
   const [savedLinks, setSavedLinks] = useState<SavedMusicLink[]>([]);
   const [activeTab, setActiveTab] = useState<'lyrics' | 'search' | 'library' | 'import-result'>('search');
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Load saved music links from IndexedDB
   useEffect(() => {
+    setIsMounted(true);
     listMusicLinks().then(setSavedLinks).catch(console.error);
   }, []);
+
+  const displayTrack = isMounted ? currentTrack : (CURATED_STUDY_TRACKS[0] || null);
 
   // Universal Playback Handler for any Saved Library Item (Song / Album)
   const handlePlaySavedLink = async (link: SavedMusicLink) => {
@@ -275,21 +278,21 @@ export default function VibraXPage() {
       )}
 
       {/* MAIN TWO-COLUMN WORKSPACE: Player on Left, Lyrics / Search on Right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-start">
+      <div suppressHydrationWarning className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-start">
         {/* LEFT COLUMN: ACTIVE TRACK & CONTROLS (5 cols) */}
-        <div className="lg:col-span-5 liquid-glass-card rounded-2xl p-6 space-y-6">
+        <div suppressHydrationWarning className="lg:col-span-5 liquid-glass-card rounded-2xl p-6 space-y-6">
           {/* Cover Art */}
-          <div className="relative aspect-square w-full rounded-xl overflow-hidden border border-white/10 bg-black flex items-center justify-center shadow-lg">
-            {currentTrack?.coverUrl ? (
+          <div suppressHydrationWarning className="relative aspect-square w-full rounded-xl overflow-hidden border border-white/10 bg-black flex items-center justify-center shadow-lg">
+            {displayTrack?.coverUrl ? (
               <img
-                src={currentTrack.coverUrl}
-                alt={currentTrack.title}
+                src={displayTrack.coverUrl}
+                alt={displayTrack.title}
                 className="w-full h-full object-cover"
               />
-            ) : currentTrack?.youtubeId ? (
+            ) : displayTrack?.youtubeId ? (
               <img
-                src={`https://img.youtube.com/vi/${currentTrack.youtubeId}/hqdefault.jpg`}
-                alt={currentTrack.title}
+                src={`https://img.youtube.com/vi/${displayTrack.youtubeId}/hqdefault.jpg`}
+                alt={displayTrack.title}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -303,28 +306,28 @@ export default function VibraXPage() {
           </div>
 
           {/* Track Info */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold text-white truncate">
-                  {currentTrack?.title || 'No Track Selected'}
+          <div suppressHydrationWarning className="flex items-start justify-between gap-4">
+            <div suppressHydrationWarning className="min-w-0">
+              <div suppressHydrationWarning className="flex items-center gap-2">
+                <h2 suppressHydrationWarning className="text-base font-semibold text-white truncate">
+                  {displayTrack?.title || 'No Track Selected'}
                 </h2>
-                {currentTrack && (
-                  <span className="shrink-0 rounded border border-white/15 px-1.5 py-0.5 font-mono text-[9px] uppercase text-zinc-300">
-                    {currentTrack.provider}
+                {displayTrack && (
+                  <span suppressHydrationWarning className="shrink-0 rounded border border-white/15 px-1.5 py-0.5 font-mono text-[9px] uppercase text-zinc-300">
+                    {displayTrack.provider}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-zinc-400 truncate mt-1 font-mono">
-                {currentTrack?.artist || 'Unknown Artist'} · <span className="text-zinc-500">{currentTrack?.album}</span>
+              <p suppressHydrationWarning className="text-xs text-zinc-400 truncate mt-1 font-mono">
+                {displayTrack?.artist || 'Unknown Artist'} · <span className="text-zinc-500">{displayTrack?.album}</span>
               </p>
             </div>
-            {currentTrack?.externalUrl && currentTrack.externalUrl !== '#' && (
+            {displayTrack?.externalUrl && displayTrack.externalUrl !== '#' && (
               <a
-                href={currentTrack.externalUrl}
+                href={displayTrack.externalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                title={`Open on ${currentTrack.provider.toUpperCase()}`}
+                title={`Open on ${displayTrack.provider.toUpperCase()}`}
                 className="p-2 rounded-lg border border-white/10 text-zinc-400 hover:text-white transition-colors"
               >
                 <ExternalLink className="h-4 w-4" />
@@ -333,20 +336,20 @@ export default function VibraXPage() {
           </div>
 
           {/* Playback Capability Badge */}
-          {currentTrack && (
-            <div className="rounded-lg border border-white/5 bg-white/[0.02] px-3 py-1.5 font-mono text-[11px] text-zinc-400 flex items-center justify-between">
+          {displayTrack && (
+            <div suppressHydrationWarning className="rounded-lg border border-white/5 bg-white/[0.02] px-3 py-1.5 font-mono text-[11px] text-zinc-400 flex items-center justify-between">
               <span>Capability:</span>
-              <div className="flex items-center gap-2">
-                <span className="text-white font-medium">
-                  {currentTrack.youtubeId
+              <div suppressHydrationWarning className="flex items-center gap-2">
+                <span suppressHydrationWarning className="text-white font-medium">
+                  {displayTrack.youtubeId
                     ? '● Full Track (YouTube)'
-                    : currentTrack.capability === 'playable'
+                    : displayTrack.capability === 'playable'
                     ? '● In-App Playable'
-                    : currentTrack.capability === 'preview_only'
+                    : displayTrack.capability === 'preview_only'
                     ? '● 30s Audio Preview'
                     : '↗ Open in Provider App'}
                 </span>
-                {currentTrack.youtubeId && (
+                {displayTrack.youtubeId && (
                   <button
                     onClick={togglePipVideo}
                     title={isPipVideoOpen ? 'Hide Video' : 'Open Video Window (PIP)'}
@@ -462,7 +465,7 @@ export default function VibraXPage() {
         </div>
 
         {/* RIGHT COLUMN: LYRICS, SEARCH, IMPORT RESULTS, SAVED (7 cols) */}
-        <div className="lg:col-span-7 liquid-glass-card rounded-2xl flex flex-col h-[600px] overflow-hidden">
+        <div suppressHydrationWarning className="lg:col-span-7 liquid-glass-card rounded-2xl flex flex-col h-[600px] overflow-hidden">
           {/* Sub-Tabs Switcher */}
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <div className="flex flex-wrap items-center gap-2">

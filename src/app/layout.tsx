@@ -21,6 +21,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var o=Element.prototype.setAttribute;Element.prototype.setAttribute=function(n,v){if(typeof n==='string'&&(n.indexOf('bis_')===0||n==='bis_skin_checked'||n==='bis_register'))return;return o.call(this,n,v);};}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="bg-[#050505] text-[#f4f4f5]" suppressHydrationWarning>
         <AppShell>{children}</AppShell>
       </body>

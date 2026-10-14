@@ -660,6 +660,9 @@ export const usePlayerStore = create<PlayerState>()(
     {
       name: 'monokuro_player_store_v2',
       partialize: (state) => ({
+        currentTrack: state.currentTrack,
+        queue: state.queue,
+        queueIndex: state.queueIndex,
         volume: state.volume,
         isMuted: state.isMuted,
         repeatMode: state.repeatMode,
