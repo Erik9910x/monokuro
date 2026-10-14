@@ -232,9 +232,9 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
        - Sau khi mount cây DOM, hàm `initLanguage()` trong [AppShell.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/app-shell/AppShell.tsx) sẽ đọc `localStorage` và cập nhật ngôn ngữ người dùng đã chọn một cách an toàn thông qua React state update bình thường (không bao giờ gây lỗi hydration).
     2. Trong [src/components/common/LanguageSelector.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/common/LanguageSelector.tsx):
        - Sử dụng cờ `isHydrated` từ store để đảm bảo cờ quốc gia và mã ngôn ngữ hiển thị chuẩn xác và đồng bộ.
-    3. **Chặn Thuộc Tính `bis_skin_checked` Từ Gốc (Early Interception):**
-       - Bổ sung đoạn script khởi động sớm trong `<head>` tại [src/app/layout.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/layout.tsx) chặn hàm `Element.prototype.setAttribute` không cho extension Bitdefender gán các thuộc tính `bis_skin_checked` vào DOM trước khi React nạp xong.
-       - Thêm `suppressHydrationWarning` cho các thẻ container để loại bỏ hoàn toàn các thông báo cảnh báo thuộc tính của React 19.
+    3. **Khắc Phục Thuộc Tính `bis_skin_checked` & Chuẩn Hóa React 19:**
+       - Xóa bỏ hoàn toàn thẻ `<script>` trong [src/app/layout.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/layout.tsx) theo quy chuẩn nghiêm ngặt của React 19 (triệt tiêu hoàn toàn lỗi *"Encountered a script tag while rendering React component"*).
+       - Bổ sung `suppressHydrationWarning` cho các thẻ container để loại bỏ hoàn toàn các thông báo thuộc tính DOM của React 19.
 
 - **Lưu Trữ Cache & Khôi Phục Toàn Diện Album / Danh Sách Bài Hát (Persistence):**
   - **Lưu trữ phiên nghe nhạc vào `localStorage`:**
@@ -243,13 +243,15 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
   - **Lưu trữ thư viện dài hạn vào IndexedDB:**
     - Khi người dùng nhập bất kỳ liên kết Spotify, Apple Music, YouTube hay SoundCloud nào, toàn bộ danh sách bài hát trích xuất được tự động ghi vào bảng `savedMusicLinks` trong cơ sở dữ liệu cục bộ IndexedDB.
     - Người dùng có thể xem lại và phát lại toàn bộ album bất cứ lúc nào từ tab **THƯ VIỆN ĐÃ LƯU** mà không cần phải kết nối hay phân tích lại link ban đầu.
+  - **Khởi tạo mượt mà không lệch Hydration:**
+    - Import đầy đủ `CURATED_STUDY_TRACKS` và sử dụng cờ `displayTrack` an toàn trong [src/app/vibrax/page.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/vibrax/page.tsx).
 
 ---
 
 ## 🧪 5. Trạng Thái Build & Kiểm Tra Hiện Tại
 - Lệnh build: `npm run build` (Turbopack + TypeScript check)
-- Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 16/16 static pages generated)**.
-- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `86ba218`).
+- Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 16/16 static pages generated trong 330ms)**.
+- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `7c60959`).
 - Dev server đang chạy mượt mà tại: `http://localhost:3000`.
 
 
