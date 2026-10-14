@@ -208,16 +208,25 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
     - Tạo API `/api/youtube/search` và module tìm kiếm phân tích trực tiếp dữ liệu từ YouTube không cần API key rườm rà.
     - Thanh tìm kiếm tại chỗ: người học chỉ cần gõ từ khóa (ví dụ: cảnh mưa anime, phim tài liệu, nhạc lofi) hoặc dán link/ID để xem ngay, không phải mở youtube.com bên ngoài rồi copy link thủ công.
     - Bộ lọc chủ đề chill 1-click: *Anime 4K Scenery*, *Studio Ghibli Vibe*, *Mưa & Cà Phê 4K*, *Tokyo Cyberpunk Night*, *Vũ Trụ & Deep Space*, *Lofi Girl Live 24/7*, *Coding Session Chill*, *Thiên Nhiên & Núi Rừng*.
-    - Lưới video kết quả trực tuyến sắc nét với ảnh bìa HD, thời lượng, kênh phát và nút 1-click phát ngay lên màn hình rạp chiếu lớn.
-  - **Cổng Cắm Tài Khoản YouTube Premium (YouTube Premium Vault):**
-    - Thẻ / Hộp thoại cấu hình YouTube Premium cho phép người dùng lưu tài khoản email và token/mật khẩu vào hệ thống để Monokuro ưu tiên luồng xem không quảng cáo (Zero Ads) và chất lượng 4K cao nhất.
-    - Hiển thị badge trạng thái `PREMIUM: {email}` nổi bật trên thanh tiêu đề CineChill.
+- **Nâng Cấp Giao Diện VibeTube & Trải Nghiệm Tìm Kiếm Remarkable:**
+  - **Đưa thanh tìm kiếm lên trên đầu màn hình Video:** Đặt toàn bộ Command Hub tìm kiếm lên vị trí cao nhất của rạp chiếu, giao diện thiết kế nổi bật (remarkable) với gradient kính mờ, viền dạ quang tinh tế, ô nhập liệu 48px bóng đổ sâu và nút "TÌM YOUTUBE" màu trắng tương phản cực rõ.
+  - **Xóa bỏ dòng thông báo cũ:** Xóa hoàn toàn thanh banner *"VibeTube In-Room: Tìm & xem YouTube trực tiếp... ANTI-ADS ACTIVE / FULL F11 RẠP PHIM"*. Nút F11 đã được tích hợp gọn gàng, tiện lợi ngay trên thanh công cụ dưới đáy video player.
+  - **Xóa bỏ hoàn toàn Demo (Clean Lockdown):** Xóa nút `TEST DEMO` trên thanh header và nút `Bật Demo Test` trên thẻ kính mờ. Rạp phim CineChill giờ đây khóa thật 100% và mở khóa tự động khi người dùng hoàn thành đủ số phút học đặt ra trong ngày.
+  - **Hiển thị Lượt Xem (Views) & Thời Gian Đăng Tải Mới Nhất (Latest Push Time):**
+    - Nâng cấp bộ phân tích `src/lib/music/youtube.ts` bóc tách đồng thời `simpleText` và chuỗi `runs` của YouTube renderer.
+    - Mỗi thẻ video trong lưới kết quả hiển thị rõ ràng số lượt xem (`👁️ video.views`) và mốc thời gian tải lên gần nhất (`🕒 video.publishedTime`, ví dụ: *2 ngày trước*, *1 tháng trước*, *8 tháng trước*).
+
+- **Nâng Cấp Nhập Album & Playlist Lên 50 Bài Cùng Một Lúc:**
+  - Trong [src/app/api/music/resolve/route.ts](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/api/music/resolve/route.ts):
+    - **Spotify:** Nâng trần cắt danh sách `entity.trackList.slice(0, 15)` lên `slice(0, 50)`.
+    - **Apple Music:** Bổ sung tham số truy vấn `&limit=50` vào iTunes catalog lookup và mở rộng `data.results.slice(1, 51)` để nạp trọn vẹn album lên tới 50 bài hát vào hàng đợi Monokuro.
 
 ---
 
 ## 🧪 5. Trạng Thái Build & Kiểm Tra Hiện Tại
 - Lệnh build: `npm run build` (Turbopack + TypeScript check)
 - Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 16/16 static pages generated)**.
-- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `e4ecb3a`).
+- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `5d6e294`).
 - Dev server đang chạy ổn định tại: `http://localhost:3000/cinechill`.
+
 
