@@ -283,58 +283,22 @@ export default function GlobalAudioPlayer() {
     };
   }, [currentTrack]);
 
-  // 4. Initialize YouTube Player instance or load new video
+  // 4. Initialize YouTube Player instance once
   useEffect(() => {
-    if (!ytApiLoaded || !currentTrack?.youtubeId) return;
+    if (!ytApiLoaded || !window.YT || !window.YT.Player || ytPlayerRef.current) return;
 
-    const ytId = currentTrack.youtubeId;
-
-    // If player instance is already active
-    if (ytPlayerRef.current && isYtReadyRef.current) {
-      if (lastLoadedYtVideoIdRef.current !== ytId) {
-        lastLoadedYtVideoIdRef.current = ytId;
-        // Pause HTML5 audio
-        if (audioRef.current && !audioRef.current.paused) {
-          audioRef.current.pause();
-          audioRef.current.currentTime = 0;
-        }
-
-        try {
-          if (userIntent === 'play') {
-            ytPlayerRef.current.loadVideoById(ytId, 0);
-          } else {
-            ytPlayerRef.current.cueVideoById(ytId, 0);
-          }
-        } catch (err) {
-          console.warn('YouTube loadVideoById error:', err);
-        }
-      } else if (userIntent === 'play') {
-        try {
-          ytPlayerRef.current.seekTo(0, true);
-          ytPlayerRef.current.playVideo();
-        } catch (err) {
-          console.warn('YouTube playVideo error:', err);
-        }
-      }
-      return;
-    }
-
-    // Save pending video ID while player initializes
-    pendingYtVideoIdRef.current = ytId;
-
-    // Initialize player instance if not yet instantiated
     const container = document.getElementById('monokuro-yt-player');
-    if (!container || !window.YT || !window.YT.Player || ytPlayerRef.current) return;
+    if (!container) return;
 
     try {
-      lastLoadedYtVideoIdRef.current = ytId;
+      const initialId = currentTrack?.youtubeId || 'X-Xxqt6Xdio';
       ytPlayerRef.current = new window.YT.Player('monokuro-yt-player', {
         width: '100%',
         height: '100%',
-        videoId: ytId,
+        videoId: initialId,
         host: 'https://www.youtube-nocookie.com',
         playerVars: {
-          autoplay: userIntent === 'play' ? 1 : 0,
+          autoplay: 0,
           controls: 0,
           disablekb: 1,
           fs: 0,
@@ -352,7 +316,7 @@ export default function GlobalAudioPlayer() {
             if (targetId) {
               lastLoadedYtVideoIdRef.current = targetId;
               if (userIntent === 'play') {
-                event.target.loadVideoById(targetId, 0);
+                event.target.loadVideoById({ videoId: targetId, startSeconds: progress > 0 ? Math.floor(progress) : 0 });
               } else {
                 event.target.cueVideoById(targetId, 0);
               }
@@ -391,8 +355,6 @@ export default function GlobalAudioPlayer() {
     }
   }, [
     ytApiLoaded,
-    currentTrack,
-    userIntent,
     volume,
     isMuted,
     notifyMediaPlaying,
@@ -404,23 +366,42 @@ export default function GlobalAudioPlayer() {
     stopTimePolling,
   ]);
 
-  // 5. Handle Audio Playback Intents (HTML5 Audio and YouTube commands)
+  // 5. Authoritative Engine Dispatcher with Strict Mutual Exclusion
   useEffect(() => {
-    // A) If track uses YouTube
+    // -------------------------------------------------------------
+    // ENGINE A: Track plays via YouTube Stream
+    // -------------------------------------------------------------
     if (currentTrack?.youtubeId) {
-      if (audioRef.current && !audioRef.current.paused) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+      // 1. Completely halt and strip HTML5 Audio
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+          audioRef.current.removeAttribute('src');
+          audioRef.current.load();
+        } catch {}
       }
+      lastLoadedAudioSrcRef.current = null;
+
+      // 2. Control YouTube Player
+      const ytId = currentTrack.youtubeId;
+      pendingYtVideoIdRef.current = ytId;
 
       if (ytPlayerRef.current && isYtReadyRef.current) {
-        const ytId = currentTrack.youtubeId;
         try {
           if (userIntent === 'play') {
             if (lastLoadedYtVideoIdRef.current !== ytId) {
               lastLoadedYtVideoIdRef.current = ytId;
-              ytPlayerRef.current.loadVideoById(ytId, 0);
+              const startSec = progress > 0 ? Math.floor(progress) : 0;
+              ytPlayerRef.current.loadVideoById({
+                videoId: ytId,
+                startSeconds: startSec,
+              });
             } else {
+              // Replaying same track or resuming
+              if (progress === 0 || ytPlayerRef.current.getPlayerState?.() === 0) {
+                ytPlayerRef.current.seekTo(0, true);
+              }
               ytPlayerRef.current.playVideo();
             }
           } else if (userIntent === 'pause') {
@@ -433,7 +414,20 @@ export default function GlobalAudioPlayer() {
       return;
     }
 
-    // B) If track uses HTML5 Audio
+    // -------------------------------------------------------------
+    // ENGINE B: Track plays via HTML5 Audio Preview
+    // -------------------------------------------------------------
+    // 1. Completely halt and stop YouTube Player so NO sound overlaps!
+    if (ytPlayerRef.current && isYtReadyRef.current) {
+      try {
+        ytPlayerRef.current.pauseVideo();
+        ytPlayerRef.current.stopVideo();
+      } catch {}
+      stopTimePolling();
+      lastLoadedYtVideoIdRef.current = null;
+    }
+
+    // 2. Control HTML5 Audio
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -442,12 +436,13 @@ export default function GlobalAudioPlayer() {
       return;
     }
 
-    // Source change
     if (lastLoadedAudioSrcRef.current !== currentTrack.audioUrl) {
       lastLoadedAudioSrcRef.current = currentTrack.audioUrl;
       audio.src = currentTrack.audioUrl;
-      audio.currentTime = 0;
+      audio.currentTime = progress > 0 ? progress : 0;
       audio.load();
+    } else if (progress === 0) {
+      audio.currentTime = 0;
     }
 
     if (userIntent === 'play') {
@@ -464,7 +459,7 @@ export default function GlobalAudioPlayer() {
     } else if (userIntent === 'pause') {
       audio.pause();
     }
-  }, [currentTrack, userIntent, playTrigger, notifyMediaError]);
+  }, [currentTrack, userIntent, playTrigger, notifyMediaError, stopTimePolling]);
 
   // 6. Sync Volume & Mute across engines
   useEffect(() => {
@@ -507,6 +502,8 @@ export default function GlobalAudioPlayer() {
   const handlePause = () => notifyMediaPaused();
   const handleWaiting = () => notifyMediaBuffering();
   const handleEnded = () => {
+    if (currentTrack?.youtubeId) return;
+
     // If it was an audio preview clip (under 40s) but the song is actually longer, upgrade to YouTube!
     if (currentTrack && !currentTrack.youtubeId && currentTrack.duration > 40) {
       const query = `${currentTrack.artist} ${currentTrack.title}`.trim();

@@ -379,17 +379,30 @@ export default function VibraXPage() {
           <div className="flex items-center justify-center gap-6">
             <button
               onClick={toggleRepeat}
-              title={`Repeat: ${repeatMode}`}
-              className={`p-2 transition-colors ${
-                repeatMode !== 'off' ? 'text-white' : 'text-zinc-600 hover:text-zinc-400'
+              title={
+                repeatMode === 'one'
+                  ? 'Replay 1 bài liên tục (Đang bật)'
+                  : repeatMode === 'all'
+                  ? 'Lặp lại danh sách (Bấm để bật Replay 1 bài)'
+                  : 'Không lặp lại'
+              }
+              className={`p-2 transition-colors relative ${
+                repeatMode === 'one'
+                  ? 'text-emerald-400 font-bold'
+                  : repeatMode !== 'off'
+                  ? 'text-white'
+                  : 'text-zinc-600 hover:text-zinc-400'
               }`}
             >
               {repeatMode === 'one' ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
+              {repeatMode === 'one' && (
+                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-400" />
+              )}
             </button>
 
             <button
               onClick={previous}
-              title="Previous Track"
+              title={progress > 1 ? 'Replay bài này từ 0:00' : 'Bài trước đó'}
               className="p-2 text-zinc-400 hover:text-white transition-colors"
             >
               <SkipBack className="h-5 w-5" />

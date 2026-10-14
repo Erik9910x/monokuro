@@ -23,6 +23,9 @@ import {
   UserCheck,
   Monitor,
   CheckCircle2,
+  Target,
+  Edit3,
+  X,
 } from 'lucide-react';
 import { useTimerStore } from '@/lib/store/timerStore';
 import { getCompletedStudySecondsToday } from '@/lib/storage';
@@ -155,10 +158,15 @@ const NETFLIX_RECOMMENDATIONS: NetflixItem[] = [
 export default function CineChillPage() {
   const { status: timerStatus, startedAt, durationMs, pausedRemainingMs, mode } = useTimerStore();
 
-  // Study time & unlock state
+  // Goal of the Day & study time state
+  const [goalMinutes, setGoalMinutes] = useState<number>(30);
+  const goalMinutesRef = useRef<number>(30);
+  const [customGoalModalOpen, setCustomGoalModalOpen] = useState(false);
+  const [customGoalInput, setCustomGoalInput] = useState('');
+
   const [totalStudiedSecs, setTotalStudiedSecs] = useState(0);
   const [studiedFormatted, setStudiedFormatted] = useState('0m 00s');
-  const [countdownRemainingSecs, setCountdownRemainingSecs] = useState(1800); // 30 minutes in seconds
+  const [countdownRemainingSecs, setCountdownRemainingSecs] = useState(1800); // in seconds
   const [countdownDisplay, setCountdownDisplay] = useState('30:00');
   const [progressPercent, setProgressPercent] = useState(0);
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -189,15 +197,42 @@ export default function CineChillPage() {
   const [breakRemainingSeconds, setBreakRemainingSeconds] = useState(30 * 60);
   const [ambientSound, setAmbientSound] = useState<'none' | 'rain' | 'fireplace'>('none');
 
-  // Load account from localStorage
+  // Load account & Goal of the Day from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedProfile = localStorage.getItem('monokuro_netflix_profile');
       if (savedProfile) setNetflixProfileName(savedProfile);
       const savedEmail = localStorage.getItem('monokuro_netflix_email');
       if (savedEmail) setNetflixEmail(savedEmail);
+
+      const savedGoal = localStorage.getItem('monokuro_cinechill_goal_minutes');
+      if (savedGoal) {
+        const parsed = parseInt(savedGoal, 10);
+        if (!isNaN(parsed) && parsed > 0 && parsed <= 240) {
+          setGoalMinutes(parsed);
+          goalMinutesRef.current = parsed;
+        }
+      }
     }
   }, []);
+
+  const handleSetGoalMinutes = (mins: number) => {
+    const clamped = Math.max(1, Math.min(240, mins));
+    setGoalMinutes(clamped);
+    goalMinutesRef.current = clamped;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('monokuro_cinechill_goal_minutes', String(clamped));
+    }
+  };
+
+  const handleApplyCustomGoal = (e: React.FormEvent) => {
+    e.preventDefault();
+    const parsed = parseInt(customGoalInput.trim(), 10);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 240) {
+      handleSetGoalMinutes(parsed);
+      setCustomGoalModalOpen(false);
+    }
+  };
 
   const handleSaveAccount = (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,15 +243,22 @@ export default function CineChillPage() {
     setIsEditingAccount(false);
   };
 
-  // Continuous real-time countdown & study time ticker (runs every 500ms)
+  // Continuous real-time countdown & study time ticker (runs every 200ms)
   useEffect(() => {
-    // 1. Initial fetch of completed sessions from IndexedDB
-    const activeStartedAt = useTimerStore.getState().startedAt;
-    getCompletedStudySecondsToday(activeStartedAt).then((secs) => {
-      basePastSecondsRef.current = secs;
-    });
+    // 1. Fetch completed sessions from IndexedDB
+    const refreshBasePastSeconds = () => {
+      const activeStartedAt = useTimerStore.getState().startedAt;
+      getCompletedStudySecondsToday(activeStartedAt).then((secs) => {
+        basePastSecondsRef.current = secs;
+      });
+    };
 
-    // 2. High-precision live ticker
+    refreshBasePastSeconds();
+
+    // Re-verify past completed sessions from IndexedDB every 2.5s
+    const dbSyncInterval = setInterval(refreshBasePastSeconds, 2500);
+
+    // 2. High-precision live ticker (200ms)
     const timerInterval = setInterval(() => {
       const storeState = useTimerStore.getState();
       const currentMode = storeState.mode;
@@ -236,7 +278,8 @@ export default function CineChillPage() {
       }
 
       const totalSecs = basePastSecondsRef.current + liveCurrentSessionSecs;
-      const TARGET_SECS = 1800; // 30 minutes
+      const currentGoalMins = goalMinutesRef.current || 30;
+      const TARGET_SECS = currentGoalMins * 60;
       const remainingSecs = Math.max(0, TARGET_SECS - totalSecs);
       const progress = Math.min(100, Math.round((totalSecs / TARGET_SECS) * 100));
       const unlocked = totalSecs >= TARGET_SECS;
@@ -246,18 +289,37 @@ export default function CineChillPage() {
       setProgressPercent(progress);
       setIsUnlocked(unlocked);
 
-      // Format countdown display (mm:ss)
-      const countdownMins = Math.floor(remainingSecs / 60);
+      // Format countdown display (mm:ss or hh:mm:ss if >= 60m)
+      const countdownHours = Math.floor(remainingSecs / 3600);
+      const countdownMins = Math.floor((remainingSecs % 3600) / 60);
       const countdownSecs = remainingSecs % 60;
-      setCountdownDisplay(`${countdownMins.toString().padStart(2, '0')}:${countdownSecs.toString().padStart(2, '0')}`);
+      if (countdownHours > 0) {
+        setCountdownDisplay(
+          `${countdownHours.toString().padStart(2, '0')}:${countdownMins
+            .toString()
+            .padStart(2, '0')}:${countdownSecs.toString().padStart(2, '0')}`
+        );
+      } else {
+        setCountdownDisplay(
+          `${countdownMins.toString().padStart(2, '0')}:${countdownSecs.toString().padStart(2, '0')}`
+        );
+      }
 
       // Format total studied display
-      const studiedMins = Math.floor(totalSecs / 60);
+      const studiedHours = Math.floor(totalSecs / 3600);
+      const studiedMins = Math.floor((totalSecs % 3600) / 60);
       const studiedRemainingSecs = totalSecs % 60;
-      setStudiedFormatted(`${studiedMins}m ${studiedRemainingSecs.toString().padStart(2, '0')}s`);
-    }, 500);
+      if (studiedHours > 0) {
+        setStudiedFormatted(`${studiedHours}h ${studiedMins}m ${studiedRemainingSecs.toString().padStart(2, '0')}s`);
+      } else {
+        setStudiedFormatted(`${studiedMins}m ${studiedRemainingSecs.toString().padStart(2, '0')}s`);
+      }
+    }, 200);
 
-    return () => clearInterval(timerInterval);
+    return () => {
+      clearInterval(timerInterval);
+      clearInterval(dbSyncInterval);
+    };
   }, []);
 
   // Break Timer Countdown for FlixOut
@@ -367,7 +429,7 @@ export default function CineChillPage() {
               ) : (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
                   <Lock className="h-3 w-3" />
-                  ĐANG KHÓA (CẦN 30 PHÚT HỌC)
+                  ĐANG KHÓA (CẦN {goalMinutes} PHÚT HỌC)
                 </span>
               )}
             </div>
@@ -386,7 +448,7 @@ export default function CineChillPage() {
             <div className="space-y-1.5 pt-1 max-w-md">
               <div className="flex justify-between text-[11px] font-mono text-zinc-400">
                 <span>
-                  Thời gian học hôm nay: <strong className="text-white">{studiedFormatted}</strong> / 30m 00s
+                  Thời gian học hôm nay: <strong className="text-white">{studiedFormatted}</strong> / {goalMinutes}m 00s
                 </span>
                 <span className="text-zinc-500">{progressPercent}%</span>
               </div>
@@ -395,6 +457,44 @@ export default function CineChillPage() {
                   className="h-full bg-gradient-to-r from-zinc-400 to-white transition-all duration-500 rounded-full"
                   style={{ width: `${Math.min(100, progressPercent)}%` }}
                 />
+              </div>
+            </div>
+
+            {/* Goal of the Day Selector Bar */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-[11px]">
+              <span className="text-zinc-500 uppercase flex items-center gap-1 text-[10px]">
+                <Target className="h-3 w-3 text-amber-400" />
+                MỤC TIÊU MỞ KHÓA:
+              </span>
+              <div className="flex items-center gap-1 bg-white/[0.04] p-0.5 rounded-lg border border-white/10">
+                {[15, 30, 45, 60].map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => handleSetGoalMinutes(m)}
+                    className={`px-2 py-0.5 rounded text-[10px] transition-colors cursor-pointer ${
+                      goalMinutes === m
+                        ? 'bg-white text-black font-bold shadow-sm'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {m}m
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    setCustomGoalInput(String(goalMinutes));
+                    setCustomGoalModalOpen(true);
+                  }}
+                  className={`px-2 py-0.5 rounded text-[10px] transition-colors flex items-center gap-1 cursor-pointer ${
+                    ![15, 30, 45, 60].includes(goalMinutes)
+                      ? 'bg-amber-400 text-black font-bold shadow-sm'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                  title="Chỉnh mục tiêu tùy chỉnh"
+                >
+                  <Edit3 className="h-2.5 w-2.5" />
+                  <span>{![15, 30, 45, 60].includes(goalMinutes) ? `${goalMinutes}m` : 'Tùy chỉnh'}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -453,7 +553,7 @@ export default function CineChillPage() {
                   Chế Độ Xem Thử Giao Diện Đang Khóa
                 </h3>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Trình phát phim VibeTube và FlixOut đã bị khóa. Hãy học đủ 30 phút để kích hoạt toàn bộ rạp chiếu.
+                  Trình phát phim VibeTube và FlixOut đã bị khóa. Hãy học đủ {goalMinutes} phút để kích hoạt toàn bộ rạp chiếu.
                 </p>
               </div>
 
@@ -476,6 +576,38 @@ export default function CineChillPage() {
                       : '○ Bấm học để đếm lùi'}
                   </span>
                 </div>
+              </div>
+
+              {/* Quick Goal Selector on Locked Card */}
+              <div className="flex flex-wrap items-center justify-center gap-1.5 font-mono text-xs text-zinc-400">
+                <span className="text-[11px] text-zinc-500">Mục tiêu hôm nay:</span>
+                {[15, 30, 45, 60].map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => handleSetGoalMinutes(m)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] transition-colors border cursor-pointer ${
+                      goalMinutes === m
+                        ? 'bg-amber-400 text-black border-amber-400 font-bold'
+                        : 'border-white/10 text-zinc-400 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    {m}m
+                  </button>
+                ))}
+                <button
+                  onClick={() => {
+                    setCustomGoalInput(String(goalMinutes));
+                    setCustomGoalModalOpen(true);
+                  }}
+                  className={`px-2 py-1 rounded-lg text-[11px] transition-colors border cursor-pointer flex items-center gap-1 ${
+                    ![15, 30, 45, 60].includes(goalMinutes)
+                      ? 'bg-amber-400 text-black border-amber-400 font-bold'
+                      : 'border-white/10 text-zinc-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Edit3 className="h-3 w-3" />
+                  <span>{![15, 30, 45, 60].includes(goalMinutes) ? `${goalMinutes}m` : 'Tùy chỉnh'}</span>
+                </button>
               </div>
 
               {/* Action Buttons */}
@@ -998,6 +1130,60 @@ export default function CineChillPage() {
           </div>
         </div>
       </div>
+
+      {/* Custom Goal Modal */}
+      {customGoalModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div className="liquid-glass-card rounded-2xl max-w-sm w-full p-6 border-white/15 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-amber-400" />
+                <h3 className="font-mono text-sm font-semibold text-white">Chỉnh Mục Tiêu Mở Khóa</h3>
+              </div>
+              <button
+                onClick={() => setCustomGoalModalOpen(false)}
+                className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleApplyCustomGoal} className="space-y-4">
+              <div>
+                <label className="block text-xs font-mono text-zinc-400 mb-2">
+                  Số phút cần học hôm nay (1 - 240 phút):
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="240"
+                  autoFocus
+                  value={customGoalInput}
+                  onChange={(e) => setCustomGoalInput(e.target.value)}
+                  placeholder="Ví dụ: 30"
+                  className="w-full rounded-xl bg-white/[0.05] border border-white/15 px-4 py-2.5 font-mono text-sm text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCustomGoalModalOpen(false)}
+                  className="flex-1 py-2 rounded-xl border border-white/10 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-mono text-xs font-bold transition-colors shadow cursor-pointer"
+                >
+                  Lưu Mục Tiêu
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

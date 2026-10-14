@@ -142,21 +142,34 @@ export default function BottomPlayerDock() {
           <div className="flex items-center gap-4 sm:gap-6 mb-1.5">
             <button
               onClick={toggleRepeat}
-              title={`Repeat Mode: ${repeatMode}`}
+              title={
+                repeatMode === 'one'
+                  ? 'Replay 1 bài liên tục (Đang bật)'
+                  : repeatMode === 'all'
+                  ? 'Lặp lại danh sách (Bấm để bật Replay 1 bài)'
+                  : 'Không lặp lại'
+              }
               aria-label={`Repeat mode: ${repeatMode}`}
-              className={`p-1.5 transition-colors ${
-                repeatMode !== 'off' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+              className={`p-1.5 transition-colors relative ${
+                repeatMode === 'one'
+                  ? 'text-emerald-400 font-bold'
+                  : repeatMode === 'all'
+                  ? 'text-white'
+                  : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               {repeatMode === 'one' ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
+              {repeatMode === 'one' && (
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-400" />
+              )}
             </button>
 
             <button
               onClick={previous}
-              title="Previous Track"
-              aria-label="Previous Track"
+              title={progress > 1 ? 'Replay bài này từ 0:00' : 'Bài trước đó'}
+              aria-label="Previous Track or Replay"
               className={`p-1 transition-colors ${
-                queue.length > 1 ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-zinc-400'
+                queue.length > 1 || progress > 1 ? 'text-zinc-400 hover:text-white' : 'text-zinc-600 hover:text-zinc-400'
               }`}
             >
               <SkipBack className="h-4 w-4 sm:h-5 sm:w-5" />

@@ -79,6 +79,7 @@ interface PlayerState {
   toggleLyricsMode: () => void;
   togglePipVideo: () => void;
   setPipVideoOpen: (open: boolean) => void;
+  replayCurrentTrack: () => void;
 
   // Engine Event Callbacks (called by GlobalAudioPlayer)
   notifyMediaCanPlay: () => void;
@@ -243,9 +244,16 @@ export const usePlayerStore = create<PlayerState>()(
         const current = get().currentTrack;
         const isSameTrack = current && (current.id === track.id || (current.title === track.title && current.artist === track.artist));
 
-        // If clicking the current track (Replay / Play)
+        // If clicking the current track (Replay / Play from 0:00)
         if (isSameTrack) {
+          const mergedTrack: PlayerTrack = {
+            ...current,
+            ...track,
+            youtubeId: track.youtubeId || current.youtubeId,
+          };
+
           set({
+            currentTrack: mergedTrack,
             status: 'loading',
             userIntent: 'play',
             progress: 0,
@@ -286,14 +294,22 @@ export const usePlayerStore = create<PlayerState>()(
             .then((r) => r.json())
             .then((data) => {
               if (data.youtubeId) {
-                const curr = get().currentTrack;
+                const state = get();
+                const curr = state.currentTrack;
                 if (curr && (curr.id === track.id || (curr.title === track.title && curr.artist === track.artist))) {
+                  const updatedTrack: PlayerTrack = {
+                    ...curr,
+                    youtubeId: data.youtubeId,
+                    capability: 'playable',
+                  };
+                  const updatedQueue = state.queue.map((t) =>
+                    t.id === track.id || (t.title === track.title && t.artist === track.artist)
+                      ? { ...t, youtubeId: data.youtubeId, capability: 'playable' as const }
+                      : t
+                  );
                   set({
-                    currentTrack: {
-                      ...curr,
-                      youtubeId: data.youtubeId,
-                      capability: 'playable',
-                    },
+                    currentTrack: updatedTrack,
+                    queue: updatedQueue,
                     playTrigger: Date.now(),
                     errorMessage: null,
                   });
@@ -338,14 +354,22 @@ export const usePlayerStore = create<PlayerState>()(
             .then((r) => r.json())
             .then((data) => {
               if (data.youtubeId) {
-                const curr = get().currentTrack;
+                const state = get();
+                const curr = state.currentTrack;
                 if (curr && (curr.id === resolvedTarget.id || (curr.title === resolvedTarget.title && curr.artist === resolvedTarget.artist))) {
+                  const updatedTrack: PlayerTrack = {
+                    ...curr,
+                    youtubeId: data.youtubeId,
+                    capability: 'playable',
+                  };
+                  const updatedQueue = state.queue.map((t) =>
+                    t.id === resolvedTarget.id || (t.title === resolvedTarget.title && t.artist === resolvedTarget.artist)
+                      ? { ...t, youtubeId: data.youtubeId, capability: 'playable' as const }
+                      : t
+                  );
                   set({
-                    currentTrack: {
-                      ...curr,
-                      youtubeId: data.youtubeId,
-                      capability: 'playable',
-                    },
+                    currentTrack: updatedTrack,
+                    queue: updatedQueue,
                     playTrigger: Date.now(),
                     errorMessage: null,
                   });
@@ -444,8 +468,8 @@ export const usePlayerStore = create<PlayerState>()(
 
       previous: () => {
         const { queue, queueIndex, progress } = get();
-        if (progress > 3) {
-          set({ progress: 0, playTrigger: Date.now() });
+        if (progress > 1 || queue.length <= 1) {
+          get().replayCurrentTrack();
           return;
         }
         if (queue.length === 0) return;
@@ -512,6 +536,18 @@ export const usePlayerStore = create<PlayerState>()(
         set({ isPipVideoOpen: open });
       },
 
+      replayCurrentTrack: () => {
+        const { currentTrack } = get();
+        if (!currentTrack) return;
+        set({
+          progress: 0,
+          status: 'loading',
+          userIntent: 'play',
+          playTrigger: Date.now(),
+          errorMessage: null,
+        });
+      },
+
       // Engine Event Callbacks
       notifyMediaCanPlay: () => {
         const { status, userIntent } = get();
@@ -538,7 +574,7 @@ export const usePlayerStore = create<PlayerState>()(
       notifyMediaEnded: () => {
         const { repeatMode } = get();
         if (repeatMode === 'one') {
-          set({ progress: 0, userIntent: 'play' });
+          get().replayCurrentTrack();
         } else {
           get().next();
         }

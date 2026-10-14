@@ -8,6 +8,27 @@ const ytCache = new Map<string, string>([
   ['justin bieber baby', 'kffacxfA7G4'],
 ]);
 
+async function fetchYouTubeHtml(searchUrl: string, timeoutMs = 6000): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    const res = await fetch(searchUrl, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
+
+    if (!res.ok) return null;
+    return await res.text();
+  } catch (err: any) {
+    return null;
+  }
+}
+
 export async function searchYouTubeVideoId(query: string): Promise<string | null> {
   if (!query || !query.trim()) return null;
 
@@ -17,24 +38,21 @@ export async function searchYouTubeVideoId(query: string): Promise<string | null
   }
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
-
-    const res = await fetch(
+    // Attempt 1: Targeted Audio Search
+    let text = await fetchYouTubeHtml(
       `https://www.youtube.com/results?search_query=${encodeURIComponent(cleanQuery + ' official audio')}`,
-      {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
-        signal: controller.signal,
-      }
-    ).finally(() => clearTimeout(timeoutId));
+      5500
+    );
 
-    if (!res.ok) return null;
+    // Attempt 2: Fallback to General Query if empty
+    if (!text) {
+      text = await fetchYouTubeHtml(
+        `https://www.youtube.com/results?search_query=${encodeURIComponent(cleanQuery)}`,
+        5500
+      );
+    }
 
-    const text = await res.text();
+    if (!text) return null;
 
     // 1. Precise ytInitialData extraction (ignores sponsored/promoted ads)
     const jsonMatch = text.match(/var ytInitialData = ({.*?});<\/script>/) || text.match(/ytInitialData\s*=\s*({.+?});/);
@@ -96,11 +114,7 @@ export async function searchYouTubeVideoId(query: string): Promise<string | null
 
     return null;
   } catch (err: any) {
-    if (err?.name === 'AbortError') {
-      console.warn('YouTube search timed out for query:', cleanQuery);
-    } else {
-      console.error('YouTube search utility error:', err);
-    }
+    console.error('YouTube search utility error:', err);
     return null;
   }
 }
