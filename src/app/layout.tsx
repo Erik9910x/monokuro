@@ -3,7 +3,7 @@ import './globals.css';
 import AppShell from '@/components/app-shell/AppShell';
 
 export const metadata: Metadata = {
-  title: 'Monokuro — Minimalist Study Workspace',
+  title: 'Monokuro',
   description:
     'Single, zero-account web application for focused study. Unifies FocusX timer, VibraX ambient music with synced lyrics, and CineChill relaxation theater.',
 };

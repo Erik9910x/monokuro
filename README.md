@@ -12,7 +12,7 @@
 
 <p align="center">
   <b>Monokuro</b> is a unified, no-account digital sanctuary engineered for students, developers, and deep thinkers.<br/>
-  Seamlessly combines precision Pomodoro timing, ambient lofi music with synced lyrics, lecture video note-taking, and an earned cinema relaxation reward system.
+  Seamlessly combines precision Pomodoro timing, ambient lofi music with synced lyrics, and an earned cinema relaxation reward system.
 </p>
 
 [**Live Demo**](http://localhost:3000) • [**Features**](#-core-modules) • [**Architecture**](#-technical-architecture) • [**Getting Started**](#-quick-start) • [**Philosophy**](#-design-philosophy)
@@ -37,13 +37,13 @@ No sign-up required. No server database tracking your habits. Everything lives s
                     │   (Global Dock • Audio Player • i18n 6L)    │
                     └──────────────────────┬───────────────────────┘
                                            │
-         ┌──────────────────┬──────────────┴─────┬──────────────────┐
-         ▼                  ▼                    ▼                  ▼
-   ⏱️ FOCUSX           🎵 VIBRAX           🎬 CINECHILL       📝 FRAMEWHISPER
-  Monotask Timer      Ambient Audio       Study-Locked Cinema  Video Notes & AI
-  • Pomodoro Cycle    • Synced Karaoke    • 12h Persistent    • Timestamp Marks
-  • Web Audio Chimes  • Multi-Platform      Unlock Window     • Transcript Sync
-  • Focus Fullscreen  • Draggable PIP     • In-Room YouTube   • AI Summary & QA
+         ┌──────────────────┬──────────────┴────────────────────┐
+         ▼                  ▼                                   ▼
+   ⏱️ FOCUSX           🎵 VIBRAX                           🎬 CINECHILL
+  Monotask Timer      Ambient Audio                       Study-Locked Cinema
+  • Pomodoro Cycle    • Synced Karaoke                    • 12h Persistent Unlock
+  • Web Audio Chimes  • Multi-Platform (Spotify/YT/Apple) • In-Room YouTube Discovery
+  • Focus Fullscreen  • Draggable Resizable PIP           • Min 10m Goal Protection
 ```
 
 ### 1. ⏱️ FocusX — Monotask Biological Timer
@@ -65,12 +65,7 @@ No sign-up required. No server database tracking your habits. Everything lives s
 * **In-Room VibeTube Discovery Hub:** Direct in-page YouTube search and 1-click curated ambiance streams (4K Anime Scenery, Ghibli Vibe, Rainy Kyoto Café, Cyberpunk Night, Cosmic Deep Ambient, Synthwave Coding).
 * **YouTube Premium Vault:** Optional client-side YouTube Premium account linkage for zero ads.
 
-### 4. 📝 FrameWhisper — Lecture & Video Workspace
-* **Timestamp Bookmarks:** Capture key insights with synchronized video timestamps. Click any note to jump directly to that exact moment in the video.
-* **Transcript-Backed AI Intelligence:** Ask questions and generate structured study summaries from video transcripts.
-* **Local Notes Ledger:** Auto-saves your notes and bookmarks locally with instant JSON export and backup capabilities.
-
-### 5. 🪟 Split Session — Parallel Study Space
+### 4. 🪟 Split Session — Parallel Study Space
 * **Dual-Pane Monotask:** Run your FocusX timer and video/music concurrently side-by-side on `/focus-session` without needing multi-monitor setups.
 
 ---
@@ -160,7 +155,6 @@ monokuro/
 │   │   ├── cinechill/      # CineChill relaxation theater page
 │   │   ├── focus-session/  # Split session parallel workspace
 │   │   ├── focusx/         # FocusX Pomodoro study timer page
-│   │   ├── framewhisper/   # FrameWhisper video study notes page
 │   │   ├── settings/       # Workspace settings & backup/export
 │   │   ├── vibrax/         # VibraX music & synced lyrics page
 │   │   ├── layout.tsx      # Root layout

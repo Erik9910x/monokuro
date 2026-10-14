@@ -7,7 +7,7 @@
 **Monokuro** là nền tảng không gian làm việc & học tập tập trung đơn nhiệm (Monotask Study Workspace), kết hợp bộ ba công cụ:
 1. **FocusX**: Đồng hồ bấm giờ Pomodoro / Monotask tối giản với chế độ toàn màn hình và âm thanh chuông sinh học.
 2. **VibraX**: Không gian âm nhạc & môi trường học tập không quảng cáo, đồng bộ lời bài hát Karaoke Synced Lyrics theo thời gian thực (Line & Word mode), hỗ trợ nhập link từ Spotify, Apple Music, SoundCloud, YouTube.
-3. **FrameWhisper**: Không gian học qua video bài giảng với ghi chú & đánh dấu Bookmark theo mốc thời gian (Timestamp).
+3. **CineChill**: Không gian rạp chiếu phim VibeTube thư giãn với cơ chế khóa học tập (tối thiểu 10 phút, mở khóa liên tục 12h), tích hợp cổng tìm kiếm YouTube trực tiếp.
 
 ---
 
