@@ -260,13 +260,22 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
   - Ràng buộc chặn dưới `Math.max(10, ...)` trong hàm cập nhật mục tiêu `handleSetGoalMinutes` và modal nhập số phút tùy chỉnh.
   - Tự động nâng mục tiêu cũ lên 10 phút nếu người dùng từng lưu mốc nhỏ hơn 10 phút trước đó.
 
+- **Chặn & Triệt Tiêu Lỗi Tiện Ích Trình Duyệt Bên Thứ Ba (Urban VPN `M_ID` Error):**
+  - **Bản chất lỗi:** Lỗi `Cannot read properties of undefined (reading 'M_ID')` tại đường dẫn `chrome-extension://eppiocemhmnlbhjplcgkofciiegomcon/executors/200.js` không thuộc mã nguồn Monokuro. Đây là crash nội bộ của extension **Urban VPN Proxy** trên trình duyệt Chrome khi extension này inject script vào tab `localhost:3000`.
+  - **Cơ chế xung đột:** Next.js Turbopack ở chế độ dev luôn lắng nghe `window.onunhandledrejection` và `window.onerror`. Khi extension bị crash, Next.js bắt trúng lỗi này và bung popup Dev Overlay lên màn hình gây phiền nhiễu cho người dùng.
+  - **Giải pháp xử lý triệt để trong code:**
+    - Trong [AppShell.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/app-shell/AppShell.tsx), đăng ký bộ lắng nghe `unhandledrejection` và `error` ở pha đón chặn (**capture phase**: `useCapture: true`).
+    - Tự động nhận diện stack trace và filename chứa `chrome-extension://`, `moz-extension://`, mã extension `eppiocemhmnlbhjplcgkofciiegomcon` hoặc thông báo lỗi `M_ID`.
+    - Gọi ngay `e.preventDefault()` và `e.stopImmediatePropagation()`. Trình duyệt lập tức đánh dấu lỗi đã được xử lý và không truyền tiếp tới Dev Overlay của Next.js, triệt tiêu hoàn toàn popup báo lỗi rác trên màn hình.
+
 ---
 
 ## 🧪 5. Trạng Thái Build & Kiểm Tra Hiện Tại
 - Lệnh build: `npm run build` (Turbopack + TypeScript check)
 - Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 16/16 static pages generated)**.
-- Lệnh sao lưu dự án: `npm run backup`.
+- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit: `037c279`).
 - Dev server đang chạy mượt mà tại: `http://localhost:3000`.
+
 
 
 
