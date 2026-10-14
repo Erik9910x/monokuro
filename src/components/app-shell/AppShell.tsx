@@ -158,35 +158,35 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     {
-      name: t('nav_focusx'),
+      name: isMounted ? t('nav_focusx') : 'FOCUSX',
       href: '/focusx',
       icon: Timer,
       badge: isMounted && timerStatus === 'running' ? remainingTimeDisplay : null,
       isActive: pathname.startsWith('/focusx'),
     },
     {
-      name: t('nav_split_session'),
+      name: isMounted ? t('nav_split_session') : 'SPLIT SESSION',
       href: '/focus-session',
       icon: SplitSquareVertical,
       badge: null,
       isActive: pathname.startsWith('/focus-session'),
     },
     {
-      name: t('nav_vibrax'),
+      name: isMounted ? t('nav_vibrax') : 'VIBRAX',
       href: '/vibrax',
       icon: Music,
-      badge: isMounted && playerStatus === 'playing' ? t('player_playing') : null,
+      badge: isMounted && playerStatus === 'playing' ? (isMounted ? t('player_playing') : 'ĐANG PHÁT') : null,
       isActive: pathname.startsWith('/vibrax'),
     },
     {
-      name: t('nav_cinechill'),
+      name: isMounted ? t('nav_cinechill') : 'CINECHILL',
       href: '/cinechill',
       icon: Film,
       badge: null,
       isActive: pathname.startsWith('/cinechill') || pathname.startsWith('/framewhisper'),
     },
     {
-      name: t('nav_settings'),
+      name: isMounted ? t('nav_settings') : 'CÀI ĐẶT',
       href: '/settings',
       icon: Settings,
       badge: null,
@@ -206,15 +206,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* ===== GLOBAL HEADER NAVIGATION ===== */}
       {!showFocusMode && (
-        <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#050505]/90 backdrop-blur-xl transition-all duration-200">
-          <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
+        <header suppressHydrationWarning className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-[#050505]/90 backdrop-blur-xl transition-all duration-200">
+          <div suppressHydrationWarning className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
             {/* Logo */}
-            <div className="flex items-center gap-3">
+            <div suppressHydrationWarning className="flex items-center gap-3">
               <Link
                 href="/"
                 className="group flex items-center gap-2.5 text-sm font-semibold tracking-wider transition-opacity hover:opacity-80"
               >
-                <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-white text-black font-mono text-xs font-black">
+                <div suppressHydrationWarning className="flex h-6 w-6 items-center justify-center rounded-sm bg-white text-black font-mono text-xs font-black">
                   M
                 </div>
                 <span className="font-mono text-xs tracking-widest text-zinc-100 uppercase">
@@ -227,7 +227,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Navigation Switcher Pills */}
-            <nav className="flex items-center gap-1 sm:gap-2">
+            <nav suppressHydrationWarning className="flex items-center gap-1 sm:gap-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -253,17 +253,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </nav>
 
             {/* Quick Status / Language & Focus Trigger */}
-            <div className="flex items-center gap-2">
+            <div suppressHydrationWarning className="flex items-center gap-2">
               <LanguageSelector />
 
               <button
+                suppressHydrationWarning
                 onClick={() => handleToggleFocusMode(true)}
                 title="Enter Distraction-Free Focus Mode with Fullscreen (Esc to exit)"
                 aria-label="Enter Focus Mode"
-                className="liquid-pill flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-mono text-zinc-300 hover:text-white"
+                className="liquid-pill flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-mono text-zinc-300 hover:text-white cursor-pointer"
               >
                 <Maximize2 className="h-3 w-3" />
-                <span className="hidden sm:inline">{t('nav_focus_mode')}</span>
+                <span suppressHydrationWarning className="hidden sm:inline">
+                  {isMounted ? t('nav_focus_mode') : 'CHẾ ĐỘ TẬP TRUNG'}
+                </span>
               </button>
             </div>
           </div>
@@ -272,26 +275,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* ===== DISTRACTION-FREE FOCUS MODE FLOATING EXIT BAR ===== */}
       {showFocusMode && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-3">
-          <div className="liquid-pill flex items-center gap-3 rounded-full px-4 py-1.5 text-xs font-mono text-zinc-300">
+        <div suppressHydrationWarning className="fixed top-4 right-4 z-50 flex items-center gap-3">
+          <div suppressHydrationWarning className="liquid-pill flex items-center gap-3 rounded-full px-4 py-1.5 text-xs font-mono text-zinc-300">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>{t('nav_focus_mode')}</span>
+            <span suppressHydrationWarning>{isMounted ? t('nav_focus_mode') : 'CHẾ ĐỘ TẬP TRUNG'}</span>
             <span className="text-zinc-500">|</span>
-            <span className="font-semibold text-white">{remainingTimeDisplay}</span>
+            <span suppressHydrationWarning className="font-semibold text-white">{remainingTimeDisplay}</span>
             <button
+              suppressHydrationWarning
               onClick={() => handleToggleFocusMode(false)}
-              className="ml-2 flex items-center gap-1 text-zinc-400 hover:text-white"
+              className="ml-2 flex items-center gap-1 text-zinc-400 hover:text-white cursor-pointer"
               aria-label="Exit Focus Mode"
             >
               <Minimize2 className="h-3.5 w-3.5" />
-              <span>{t('nav_esc_exit')}</span>
+              <span suppressHydrationWarning>{isMounted ? t('nav_esc_exit') : 'ESC THOÁT'}</span>
             </button>
           </div>
         </div>
       )}
 
       {/* ===== MAIN CONTENT SURFACE (With pb-28 bottom margin for the fixed player dock) ===== */}
-      <main className="flex-1 w-full flex flex-col pb-28">{children}</main>
+      <main suppressHydrationWarning className="flex-1 w-full flex flex-col pb-28">{children}</main>
 
       {/* ===== FIXED BOTTOM PLAYER DOCK (No liquid glass, z-index 9999) ===== */}
       <BottomPlayerDock />

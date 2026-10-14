@@ -8,11 +8,14 @@ import { SUPPORTED_LANGUAGES, LanguageCode } from '@/lib/i18n';
 export default function LanguageSelector() {
   const { language, setLanguage } = useLanguageStore();
   const [isOpen, setIsOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  const currentMeta = SUPPORTED_LANGUAGES.find((l) => l.code === language) || SUPPORTED_LANGUAGES[0];
+  const activeLang = isMounted ? language : 'vi';
+  const currentMeta = SUPPORTED_LANGUAGES.find((l) => l.code === activeLang) || SUPPORTED_LANGUAGES[0];
 
   useEffect(() => {
+    setIsMounted(true);
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);
@@ -23,7 +26,7 @@ export default function LanguageSelector() {
   }, []);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div suppressHydrationWarning className="relative" ref={dropdownRef}>
       <button
         suppressHydrationWarning
         onClick={() => setIsOpen(!isOpen)}

@@ -553,6 +553,7 @@ export default function GlobalAudioPlayer() {
 
       {/* Floating Picture-in-Picture / Video Drawer for YouTube streams */}
       <div
+        suppressHydrationWarning
         style={
           isPipVideoOpen && pipPos
             ? {
@@ -574,6 +575,7 @@ export default function GlobalAudioPlayer() {
       >
         {isPipVideoOpen && (
           <div
+            suppressHydrationWarning
             onMouseDown={handleDragStart}
             title={t('player_pip_drag_hint')}
             className="h-[38px] shrink-0 flex items-center justify-between border-b border-white/10 px-3 bg-black/60 cursor-grab active:cursor-grabbing select-none"
@@ -642,8 +644,8 @@ export default function GlobalAudioPlayer() {
           </div>
         )}
 
-        <div className={`relative flex-1 w-full bg-black overflow-hidden ${!isPipVideoOpen ? 'w-60 h-36' : ''}`}>
-          <div id="monokuro-yt-player" className="w-full h-full" />
+        <div suppressHydrationWarning className={`relative flex-1 w-full bg-black overflow-hidden ${!isPipVideoOpen ? 'w-60 h-36' : ''}`}>
+          <div suppressHydrationWarning id="monokuro-yt-player" className="w-full h-full" />
         </div>
 
         {/* Free Resize Corner Handle */}
