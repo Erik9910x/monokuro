@@ -144,12 +144,16 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
 - **Đổi tên & Tính năng Phương án B $\rightarrow$ FlixOut:**
   - **Tích hợp sẵn tài khoản Netflix vào Web:** Thẻ *Hồ sơ tài khoản Netflix đã liên kết* (Linked Account Vault) ghi nhớ Profile và Email người dùng, nút 1-click mở thẳng Netflix.
   - Cửa sổ Pop-out rạp chiếu không viền (S, M, L) và bộ đếm ngược giờ giải lao (15p, 30p, 45p) kèm chuông Zen nhắc học.
-- **Cinematic Blur Popup Modal (Khi chưa đủ điều kiện 30 phút):**
-  - Màn hình popup mờ ảo Cinematic Blur (`backdrop-blur-2xl`) che trọn màn hình báo *Chưa đủ điều kiện...*.
-  - Hiển thị chính xác tiến độ học hôm nay và thời gian còn thiếu.
-  - Cung cấp đúng 2 lựa chọn theo yêu cầu:
-    1. **HỌC NGAY ĐỂ MỞ KHÓA (Vào FocusX)**: Chuyển ngay đến trang học tập.
-    2. **RỜI KHỎI CINEMATIC BLUR MODE**: Đóng popup để nhìn giao diện bên dưới, nhưng toàn bộ trình phát và nút bấm vẫn bị khóa mờ (`pointer-events-none opacity-30 select-none`), hoàn toàn không được dùng.
+- **Chế Độ Xem Thử Giao Diện Đang Khóa (Frosted Locked Overlay - Không Dùng Pop-up):**
+  - Xóa bỏ hoàn toàn pop-up che toàn màn hình theo đúng yêu cầu người dùng.
+  - Vùng trình phát VibeTube & FlixOut có lớp phủ kính mờ tinh tế (In-Page Frosted Glass Locked Overlay).
+  - Hiển thị thông điệp chuẩn: *"Chế Độ Xem Thử Giao Diện Đang Khóa - Trình phát phim VibeTube và FlixOut đã bị khóa. Hãy học đủ 30 phút để kích hoạt toàn bộ rạp chiếu."*
+- **Bộ Đếm Ngược Countdown Theo Real-Time (30:00 $\rightarrow$ 00:00):**
+  - Đồng hồ đếm ngược sống động hiển thị thời gian còn lại cần học trên cả thanh header và trên thẻ khóa.
+  - Tích hợp hàm `getCompletedStudySecondsToday` bóc tách phiên học đang chạy trong RAM với dữ liệu IndexedDB:
+    - Khi FocusX đang bấm giờ: Đồng hồ đếm lùi từng giây một theo thời gian thực (ví dụ `29:59` $\rightarrow$ `29:58` $\rightarrow$ `29:57`...).
+    - Khi FocusX tạm dừng: Đồng hồ hiển thị `⏸️ TẠM DỪNG: mm:ss`.
+    - Khi đạt mốc 30 phút: Tự động về `00:00` và mở khóa toàn bộ rạp chiếu CineChill ngay lập tức.
 - **Ghi nhận thời gian học liên tục từng giây (Không mất thời gian oan uổng):**
   - Trong `timerStore.ts`: Cập nhật `pause()`, `resume()`, và `reset()` lưu ngay số giây đã học vào `IndexedDB`. Ngay cả khi người học bấm Reset giữa chừng, số giây đã học vẫn được bảo toàn nguyên vẹn cho ngày hôm đó!
   - Trong `CineChill`: Timer đếm nhịp mỗi 1 giây cộng dồn thời gian đang chạy từ FocusX sang CineChill theo thời gian thực (Real-time).
