@@ -232,15 +232,24 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
        - Sau khi mount cây DOM, hàm `initLanguage()` trong [AppShell.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/app-shell/AppShell.tsx) sẽ đọc `localStorage` và cập nhật ngôn ngữ người dùng đã chọn một cách an toàn thông qua React state update bình thường (không bao giờ gây lỗi hydration).
     2. Trong [src/components/common/LanguageSelector.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/common/LanguageSelector.tsx):
        - Sử dụng cờ `isHydrated` từ store để đảm bảo cờ quốc gia và mã ngôn ngữ hiển thị chuẩn xác và đồng bộ.
-    3. Trong [src/app/vibrax/page.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/vibrax/page.tsx), [src/app/focusx/page.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/focusx/page.tsx), [src/app/settings/page.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/settings/page.tsx) & [GlobalAudioPlayer.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/player/GlobalAudioPlayer.tsx):
-       - Thêm `suppressHydrationWarning` cho các thẻ container để miễn nhiễm hoàn toàn với thuộc tính `bis_skin_checked="1"` của Bitdefender.
+    3. **Chặn Thuộc Tính `bis_skin_checked` Từ Gốc (Early Interception):**
+       - Bổ sung đoạn script khởi động sớm trong `<head>` tại [src/app/layout.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/layout.tsx) chặn hàm `Element.prototype.setAttribute` không cho extension Bitdefender gán các thuộc tính `bis_skin_checked` vào DOM trước khi React nạp xong.
+       - Thêm `suppressHydrationWarning` cho các thẻ container để loại bỏ hoàn toàn các thông báo cảnh báo thuộc tính của React 19.
+
+- **Lưu Trữ Cache & Khôi Phục Toàn Diện Album / Danh Sách Bài Hát (Persistence):**
+  - **Lưu trữ phiên nghe nhạc vào `localStorage`:**
+    - Cập nhật cấu hình lưu trữ `partialize` trong [src/lib/store/playerStore.ts](file:///d:/1.PROJECT%20CODE/Monokuro/src/lib/store/playerStore.ts): Bổ sung `currentTrack`, `queue` (danh sách toàn bộ tối đa 50 bài hát) và `queueIndex` (vị trí bài hát đang phát).
+    - Khi người dùng tải lại trang (F5) hoặc mở lại Monokuro vào ngày hôm sau, toàn bộ danh sách bài hát trong Album/Playlist đang phát được khôi phục nguyên vẹn ngay lập tức.
+  - **Lưu trữ thư viện dài hạn vào IndexedDB:**
+    - Khi người dùng nhập bất kỳ liên kết Spotify, Apple Music, YouTube hay SoundCloud nào, toàn bộ danh sách bài hát trích xuất được tự động ghi vào bảng `savedMusicLinks` trong cơ sở dữ liệu cục bộ IndexedDB.
+    - Người dùng có thể xem lại và phát lại toàn bộ album bất cứ lúc nào từ tab **THƯ VIỆN ĐÃ LƯU** mà không cần phải kết nối hay phân tích lại link ban đầu.
 
 ---
 
 ## 🧪 5. Trạng Thái Build & Kiểm Tra Hiện Tại
 - Lệnh build: `npm run build` (Turbopack + TypeScript check)
 - Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 16/16 static pages generated)**.
-- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `d548159`).
+- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `86ba218`).
 - Dev server đang chạy mượt mà tại: `http://localhost:3000`.
 
 
