@@ -21,13 +21,11 @@ import {
   Coffee,
   ShieldCheck,
   UserCheck,
-  EyeOff,
-  ArrowRight,
   Monitor,
   CheckCircle2,
 } from 'lucide-react';
 import { useTimerStore } from '@/lib/store/timerStore';
-import { getTodayStudyStats, TodayStudyStats } from '@/lib/storage';
+import { getCompletedStudySecondsToday } from '@/lib/storage';
 import { playCompletionChime } from '@/lib/timer/audio';
 
 // ===== CURATED IN-APP CHILL CINEMA (VIBETUBE) =====
@@ -158,17 +156,17 @@ export default function CineChillPage() {
   const { status: timerStatus, startedAt, durationMs, pausedRemainingMs, mode } = useTimerStore();
 
   // Study time & unlock state
-  const [studyStats, setStudyStats] = useState<TodayStudyStats>({
-    totalSeconds: 0,
-    totalFormatted: '0m 00s',
-    targetSeconds: 1800,
-    progressPercent: 0,
-    isUnlocked: false,
-    sessionsCount: 0,
-  });
-  const [demoBypass, setDemoBypass] = useState(false); // Default false to allow experiencing the lock & popup
-  const [showCinematicBlurModal, setShowCinematicBlurModal] = useState(true);
+  const [totalStudiedSecs, setTotalStudiedSecs] = useState(0);
+  const [studiedFormatted, setStudiedFormatted] = useState('0m 00s');
+  const [countdownRemainingSecs, setCountdownRemainingSecs] = useState(1800); // 30 minutes in seconds
+  const [countdownDisplay, setCountdownDisplay] = useState('30:00');
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [demoBypass, setDemoBypass] = useState(false); // Default false: true lock state
   const [activeTab, setActiveTab] = useState<'vibetube' | 'flixout'>('vibetube');
+
+  // Base past seconds from IndexedDB
+  const basePastSecondsRef = useRef<number>(0);
 
   // VibeTube (In-App Cinema) state
   const [selectedVideo, setSelectedVideo] = useState<CuratedVideo>(CURATED_CINEMA[0]);
@@ -210,48 +208,57 @@ export default function CineChillPage() {
     setIsEditingAccount(false);
   };
 
-  // Continuous real-time study time ticker (runs every 1 second)
+  // Continuous real-time countdown & study time ticker (runs every 500ms)
   useEffect(() => {
-    let baseSecondsFromDB = 0;
+    // 1. Initial fetch of completed sessions from IndexedDB
+    const activeStartedAt = useTimerStore.getState().startedAt;
+    getCompletedStudySecondsToday(activeStartedAt).then((secs) => {
+      basePastSecondsRef.current = secs;
+    });
 
-    const fetchDB = async () => {
-      const stats = await getTodayStudyStats(30);
-      baseSecondsFromDB = stats.totalSeconds;
-    };
-    fetchDB();
+    // 2. High-precision live ticker
+    const timerInterval = setInterval(() => {
+      const storeState = useTimerStore.getState();
+      const currentMode = storeState.mode;
+      const currentStatus = storeState.status;
+      const currentDeadline = storeState.deadlineAt;
+      const currentDuration = storeState.durationMs;
+      const currentPausedRemaining = storeState.pausedRemainingMs;
 
-    const interval = setInterval(async () => {
-      // 1. Calculate live seconds from active timer session
-      let liveElapsedSecs = 0;
-      if (mode === 'focus') {
-        if (timerStatus === 'running' && startedAt) {
-          liveElapsedSecs = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
-        } else if (timerStatus === 'paused' && pausedRemainingMs !== null && durationMs) {
-          liveElapsedSecs = Math.max(0, Math.floor((durationMs - pausedRemainingMs) / 1000));
+      let liveCurrentSessionSecs = 0;
+      if (currentMode === 'focus') {
+        if (currentStatus === 'running' && currentDeadline) {
+          const remainingMs = Math.max(0, currentDeadline - Date.now());
+          liveCurrentSessionSecs = Math.max(0, Math.floor((currentDuration - remainingMs) / 1000));
+        } else if (currentStatus === 'paused' && currentPausedRemaining !== null) {
+          liveCurrentSessionSecs = Math.max(0, Math.floor((currentDuration - currentPausedRemaining) / 1000));
         }
       }
 
-      const totalSecs = baseSecondsFromDB + liveElapsedSecs;
-      const targetSecs = 1800; // 30 minutes
-      const progress = Math.min(100, Math.round((totalSecs / targetSecs) * 100));
-      const unlocked = totalSecs >= targetSecs;
+      const totalSecs = basePastSecondsRef.current + liveCurrentSessionSecs;
+      const TARGET_SECS = 1800; // 30 minutes
+      const remainingSecs = Math.max(0, TARGET_SECS - totalSecs);
+      const progress = Math.min(100, Math.round((totalSecs / TARGET_SECS) * 100));
+      const unlocked = totalSecs >= TARGET_SECS;
 
-      const mins = Math.floor(totalSecs / 60);
-      const secs = totalSecs % 60;
-      const formatted = `${mins}m ${secs.toString().padStart(2, '0')}s`;
+      setTotalStudiedSecs(totalSecs);
+      setCountdownRemainingSecs(remainingSecs);
+      setProgressPercent(progress);
+      setIsUnlocked(unlocked);
 
-      setStudyStats({
-        totalSeconds: totalSecs,
-        totalFormatted: formatted,
-        targetSeconds: targetSecs,
-        progressPercent: progress,
-        isUnlocked: unlocked,
-        sessionsCount: 1,
-      });
-    }, 1000);
+      // Format countdown display (mm:ss)
+      const countdownMins = Math.floor(remainingSecs / 60);
+      const countdownSecs = remainingSecs % 60;
+      setCountdownDisplay(`${countdownMins.toString().padStart(2, '0')}:${countdownSecs.toString().padStart(2, '0')}`);
 
-    return () => clearInterval(interval);
-  }, [timerStatus, startedAt, durationMs, pausedRemainingMs, mode]);
+      // Format total studied display
+      const studiedMins = Math.floor(totalSecs / 60);
+      const studiedRemainingSecs = totalSecs % 60;
+      setStudiedFormatted(`${studiedMins}m ${studiedRemainingSecs.toString().padStart(2, '0')}s`);
+    }, 500);
+
+    return () => clearInterval(timerInterval);
+  }, []);
 
   // Break Timer Countdown for FlixOut
   useEffect(() => {
@@ -333,7 +340,7 @@ export default function CineChillPage() {
     setIsBreakTimerActive(true);
   };
 
-  const isAccessAllowed = demoBypass || studyStats.isUnlocked;
+  const isAccessAllowed = demoBypass || isUnlocked;
 
   return (
     <div className="relative min-h-[calc(100vh-3.5rem)] flex flex-col bg-[#050505] text-[#f4f4f5] px-4 py-6 sm:px-6 lg:px-8">
@@ -342,100 +349,10 @@ export default function CineChillPage() {
         <div className="h-[600px] w-[800px] rounded-full bg-white/[0.015] blur-[140px]" />
       </div>
 
-      {/* ========================================================================= */}
-      {/* 1. CINEMATIC BLUR POPUP (KHI CHƯA ĐỦ ĐIỀU KIỆN 30 PHÚT)                    */}
-      {/* ========================================================================= */}
-      {!isAccessAllowed && showCinematicBlurModal && (
-        <div className="fixed inset-0 z-50 backdrop-blur-2xl bg-black/85 flex items-center justify-center p-4 sm:p-6 transition-all duration-300">
-          <div className="relative w-full max-w-lg rounded-3xl border border-white/15 bg-zinc-950/90 p-6 sm:p-8 text-center space-y-6 shadow-2xl backdrop-blur-xl">
-            {/* Padlock Icon with Ambient Pulse */}
-            <div className="relative mx-auto h-20 w-20 flex items-center justify-center rounded-2xl bg-white/[0.04] border border-white/10 text-white">
-              <div className="absolute inset-0 rounded-2xl bg-amber-500/10 blur-xl animate-pulse" />
-              <Lock className="h-9 w-9 text-amber-300 relative z-10" />
-            </div>
-
-            <div className="space-y-2">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-amber-400 font-semibold px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/20">
-                CHƯA ĐỦ ĐIỀU KIỆN MỞ KHÓA CINECHILL
-              </span>
-              <h2 className="text-2xl font-mono font-medium text-white tracking-tight pt-1">
-                Hoàn Thành 30 Phút Học Hôm Nay
-              </h2>
-              <p className="text-xs text-zinc-400 leading-relaxed max-w-md mx-auto">
-                Không gian rạp chiếu CineChill chỉ dành riêng cho những ai đã hoàn thành tối thiểu{' '}
-                <strong className="text-white">30 phút học tập/làm việc tập trung</strong> trong ngày.
-              </p>
-            </div>
-
-            {/* Continuous Real-time Progress Bar */}
-            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 text-left font-mono space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-zinc-400">Thời gian học đã ghi nhận:</span>
-                <span className="text-white font-bold">{studyStats.totalFormatted} / 30m 00s</span>
-              </div>
-              <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-amber-400 to-white transition-all duration-500 rounded-full"
-                  style={{ width: `${Math.min(100, studyStats.progressPercent)}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-[11px] text-zinc-500 pt-0.5">
-                <span>Tiến độ: {studyStats.progressPercent}%</span>
-                <span>
-                  Còn thiếu:{' '}
-                  <strong className="text-amber-300">
-                    {Math.max(0, 30 - Math.floor(studyStats.totalSeconds / 60))} phút{' '}
-                    {(60 - (studyStats.totalSeconds % 60)) % 60}s
-                  </strong>
-                </span>
-              </div>
-            </div>
-
-            {/* 2 Main Action Choices Required by User */}
-            <div className="space-y-2.5 pt-1">
-              {/* Option 1: Study Now */}
-              <Link
-                href="/focusx"
-                className="w-full py-3 px-4 rounded-xl bg-white text-black font-mono text-xs font-bold hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 shadow-lg"
-              >
-                <Timer className="h-4 w-4" />
-                <span>HỌC NGAY ĐỂ MỞ KHÓA (VÀO FOCUSX)</span>
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-
-              {/* Option 2: Leave Blur Mode but Still Cannot Use */}
-              <button
-                onClick={() => setShowCinematicBlurModal(false)}
-                className="w-full py-2.5 px-4 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-zinc-400 hover:text-white font-mono text-xs transition-colors flex items-center justify-center gap-2"
-              >
-                <EyeOff className="h-3.5 w-3.5" />
-                <span>RỜI KHỎI CINEMATIC BLUR MODE (XEM GIAO DIỆN BỊ KHÓA)</span>
-              </button>
-            </div>
-
-            {/* Test Demo Toggle for Developer/Tester */}
-            <div className="pt-2 border-t border-white/10">
-              <button
-                onClick={() => {
-                  setDemoBypass(true);
-                  setShowCinematicBlurModal(false);
-                }}
-                className="text-[11px] font-mono text-amber-400/80 hover:text-amber-300 underline underline-offset-4 transition-colors"
-              >
-                🧪 Bật chế độ Test Demo Bypass (Mở khóa tức thì để test tính năng)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 2. MAIN CINECHILL WORKSPACE INTERFACE                                      */}
-      {/* ========================================================================= */}
       <div className="relative z-10 max-w-6xl w-full mx-auto space-y-6">
-        {/* Top Control Header */}
+        {/* Top Control Header with Live Countdown & Status */}
         <div className="liquid-glass-card rounded-2xl p-4 sm:p-5 border-white/10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          <div className="space-y-1.5 flex-1">
+          <div className="space-y-2 flex-1">
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="font-mono text-[11px] text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                 <Clapperboard className="h-3.5 w-3.5 text-zinc-300" />
@@ -465,32 +382,41 @@ export default function CineChillPage() {
               </p>
             </div>
 
-            {/* Continuous Real-time Progress Bar */}
+            {/* Continuous Real-time Progress Bar & Study Time */}
             <div className="space-y-1.5 pt-1 max-w-md">
               <div className="flex justify-between text-[11px] font-mono text-zinc-400">
                 <span>
-                  Thời gian học hôm nay: <strong className="text-white">{studyStats.totalFormatted}</strong> / 30m 00s
+                  Thời gian học hôm nay: <strong className="text-white">{studiedFormatted}</strong> / 30m 00s
                 </span>
-                <span className="text-zinc-500">{studyStats.progressPercent}%</span>
+                <span className="text-zinc-500">{progressPercent}%</span>
               </div>
               <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-zinc-400 to-white transition-all duration-500 rounded-full"
-                  style={{ width: `${Math.min(100, studyStats.progressPercent)}%` }}
+                  style={{ width: `${Math.min(100, progressPercent)}%` }}
                 />
               </div>
             </div>
           </div>
 
-          {/* Test & Action Controls */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 self-end lg:self-center">
+          {/* Real-time Countdown Box & Action Controls */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0 self-end lg:self-center">
+            {/* Live Countdown Counter Badge */}
+            <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/10 font-mono shadow-sm">
+              <div className="flex flex-col text-right">
+                <span className="text-[10px] text-zinc-400 uppercase tracking-wider flex items-center gap-1 justify-end">
+                  <span className={`h-1.5 w-1.5 rounded-full ${timerStatus === 'running' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                  {isAccessAllowed ? 'MỤC TIÊU HỌC' : 'ĐẾM NGƯỢC MỞ KHÓA'}
+                </span>
+                <span className="text-base font-bold text-white tracking-widest">
+                  {isAccessAllowed ? '00:00 (HOÀN TẤT)' : countdownDisplay}
+                </span>
+              </div>
+            </div>
+
             {/* Demo Toggle Button */}
             <button
-              onClick={() => {
-                const nextBypass = !demoBypass;
-                setDemoBypass(nextBypass);
-                if (!nextBypass) setShowCinematicBlurModal(true);
-              }}
+              onClick={() => setDemoBypass(!demoBypass)}
               className={`px-3 py-2 rounded-xl text-xs font-mono transition-all flex items-center justify-center gap-2 border cursor-pointer ${
                 demoBypass
                   ? 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
@@ -501,19 +427,9 @@ export default function CineChillPage() {
               <span>TEST DEMO: {demoBypass ? 'BẬT (Mở khóa)' : 'TẮT (Khóa thật)'}</span>
             </button>
 
-            {!isAccessAllowed && (
-              <button
-                onClick={() => setShowCinematicBlurModal(true)}
-                className="px-3 py-2 rounded-xl text-xs font-mono border border-amber-500/20 bg-amber-500/5 text-amber-300 hover:bg-amber-500/10 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Lock className="h-3.5 w-3.5" />
-                <span>HIỆN POPUP BLUR</span>
-              </button>
-            )}
-
             <Link
               href="/focusx"
-              className="px-3 py-2 rounded-xl text-xs font-mono bg-white text-black hover:bg-zinc-200 transition-colors flex items-center justify-center gap-1.5 shadow-sm font-semibold"
+              className="px-3.5 py-2 rounded-xl text-xs font-mono bg-white text-black hover:bg-zinc-200 transition-colors flex items-center justify-center gap-1.5 shadow-sm font-semibold"
             >
               <Timer className="h-3.5 w-3.5" />
               <span>VÀO HỌC BẤM GIỜ</span>
@@ -522,34 +438,61 @@ export default function CineChillPage() {
         </div>
 
         {/* ========================================================================= */}
-        {/* 3. CINEMA CONTAINER (LOCKED OVERLAY WHEN NOT ALLOWED)                      */}
+        {/* CINEMA CONTAINER WITH IN-PAGE FROSTED GLASS LOCKED OVERLAY                */}
         {/* ========================================================================= */}
         <div className="relative">
-          {/* Locked Overlay if user closed popup but is still under 30 mins */}
+          {/* ONLY IN-PAGE FROSTED GLASS LOCKED OVERLAY (NO FULLSCREEN MODAL POPUP) */}
           {!isAccessAllowed && (
             <div className="absolute inset-0 z-30 bg-black/75 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center p-6 text-center space-y-4 border border-white/10">
-              <div className="h-14 w-14 rounded-2xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-amber-300">
-                <Lock className="h-7 w-7" />
+              <div className="h-16 w-16 rounded-2xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-amber-300 shadow-xl">
+                <Lock className="h-8 w-8 animate-pulse" />
               </div>
-              <div className="space-y-1 max-w-md">
-                <h3 className="text-lg font-mono font-medium text-white">Chế Độ Xem Thử Giao Diện Đang Khóa</h3>
-                <p className="text-xs text-zinc-400">
+
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="text-xl font-mono font-medium text-white tracking-tight">
+                  Chế Độ Xem Thử Giao Diện Đang Khóa
+                </h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
                   Trình phát phim VibeTube và FlixOut đã bị khóa. Hãy học đủ 30 phút để kích hoạt toàn bộ rạp chiếu.
                 </p>
               </div>
-              <div className="flex gap-2.5">
+
+              {/* Real-time Countdown Display on the Locked Card */}
+              <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-4 max-w-sm w-full mx-auto font-mono text-center space-y-1 shadow-inner">
+                <div className="text-[10px] text-zinc-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                  <span className={`h-2 w-2 rounded-full ${timerStatus === 'running' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                  <span>ĐẾM NGƯỢC THỜI GIAN CÒN LẠI ĐỂ MỞ KHÓA</span>
+                </div>
+                <div className="text-3xl font-extrabold text-white tracking-widest py-1">
+                  {countdownDisplay}
+                </div>
+                <div className="flex justify-between text-[11px] text-zinc-500 pt-1 border-t border-white/5">
+                  <span>Hôm nay: {studiedFormatted}</span>
+                  <span className="text-amber-300">
+                    {timerStatus === 'running'
+                      ? '● Đang đếm lùi theo FocusX'
+                      : timerStatus === 'paused'
+                      ? '⏸️ FocusX đang tạm dừng'
+                      : '○ Bấm học để đếm lùi'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
                 <Link
                   href="/focusx"
-                  className="px-4 py-2 rounded-xl bg-white text-black font-mono text-xs font-bold hover:bg-zinc-200 transition-colors flex items-center gap-1.5"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white text-black font-mono text-xs font-bold hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2 shadow"
                 >
                   <Timer className="h-3.5 w-3.5" />
-                  <span>Vào Học Ngay</span>
+                  <span>VÀO FOCUSX HỌC NGAY</span>
                 </Link>
+
                 <button
                   onClick={() => setDemoBypass(true)}
-                  className="px-4 py-2 rounded-xl border border-white/15 text-zinc-300 hover:text-white font-mono text-xs transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-white/15 text-zinc-300 hover:text-white font-mono text-xs transition-colors cursor-pointer"
                 >
-                  Bật Demo Test
+                  Bật Demo Test Để Trải Nghiệm →
                 </button>
               </div>
             </div>

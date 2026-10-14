@@ -397,3 +397,31 @@ export async function getTodayStudyStats(targetMinutes = 30): Promise<TodayStudy
     };
   }
 }
+
+export async function getCompletedStudySecondsToday(activeSessionStartedAt?: number | null): Promise<number> {
+  try {
+    const sessions = await listTimerSessions(200);
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+    let totalMs = 0;
+    for (const s of sessions) {
+      if (activeSessionStartedAt && s.startedAt === activeSessionStartedAt) {
+        continue; // Exclude active session so memory countdown is exact
+      }
+      if (s.mode === 'focus' && s.createdAt >= startOfDay) {
+        if (s.status === 'completed') {
+          totalMs += s.durationMs;
+        } else if (s.startedAt) {
+          const endTime = s.completedAt || s.updatedAt || s.startedAt;
+          const elapsed = Math.max(0, Math.min(s.durationMs, endTime - s.startedAt));
+          totalMs += elapsed;
+        }
+      }
+    }
+    return Math.floor(totalMs / 1000);
+  } catch (err) {
+    console.warn('Failed to get completed study seconds today:', err);
+    return 0;
+  }
+}
