@@ -268,13 +268,16 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
     - Tự động nhận diện stack trace và filename chứa `chrome-extension://`, `moz-extension://`, mã extension `eppiocemhmnlbhjplcgkofciiegomcon` hoặc thông báo lỗi `M_ID`.
     - Gọi ngay `e.preventDefault()` và `e.stopImmediatePropagation()`. Trình duyệt lập tức đánh dấu lỗi đã được xử lý và không truyền tiếp tới Dev Overlay của Next.js, triệt tiêu hoàn toàn popup báo lỗi rác trên màn hình.
 
+    - Tạo module [src/lib/suppress-extension-noise.ts](file:///d:/1.PROJECT%20CODE/Monokuro/src/lib/suppress-extension-noise.ts) nạp ngay ở đầu Client bundle: Tự động gỡ bỏ thuộc tính `bis_skin_checked` trước khi React hydration kích hoạt, đồng thời bọc `console.error` để triệt tiêu toàn bộ cảnh báo thuộc tính DOM sinh ra bởi các tiện ích an ninh trình duyệt như Bitdefender TrafficLight.
+
 ---
 
 ## 🧪 5. Trạng Thái Build & Kiểm Tra Hiện Tại
 - Lệnh build: `npm run build` (Turbopack + TypeScript check)
 - Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 16/16 static pages generated)**.
-- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit: `037c279`).
+- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `5c96444`).
 - Dev server đang chạy mượt mà tại: `http://localhost:3000`.
+
 
 
 
