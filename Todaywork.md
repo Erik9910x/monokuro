@@ -217,19 +217,29 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
     - Mỗi thẻ video trong lưới kết quả hiển thị rõ ràng số lượt xem (`👁️ video.views`) và mốc thời gian tải lên gần nhất (`🕒 video.publishedTime`, ví dụ: *2 ngày trước*, *1 tháng trước*, *8 tháng trước*).
 
 - **Nâng Cấp Nhập Album & Playlist Lên 50 Bài Cùng Một Lúc:**
-- **Sửa Triệt Để Lỗi Hydration Mismatch (Recoverable Error):**
-  - **Nguyên nhân:** Khi Server SSR kết xuất trang, Zustand `useLanguageStore` khởi tạo với giá trị ngôn ngữ mặc định `'vi'` (`nav_split_session: 'PHIÊN CHIA ĐÔI'`). Tuy nhiên trên trình duyệt Client, `localStorage` của người dùng đã lưu trữ ngôn ngữ `'en'`, khiến hàm `t()` trên Client trả về `'SPLIT SESSION'`. Do `suppressHydrationWarning` của React chỉ có tác dụng ở cấp độ 1 tầng (shallow), thẻ `<span>` con bên trong thẻ `<Link>` không được bảo vệ, dẫn tới cảnh báo lệch cấu trúc DOM `+ SPLIT SESSION / - PHIÊN CHIA ĐÔI`.
-  - **Giải pháp:**
-    1. Đặt thuộc tính `suppressHydrationWarning` trực tiếp lên thẻ `<span suppressHydrationWarning className="hidden md:inline">{item.name}</span>` và các phần tử hiển thị cờ/mã ngôn ngữ trong [LanguageSelector.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/common/LanguageSelector.tsx).
-    2. Chuẩn hóa khóa dịch `nav_split_session: 'SPLIT SESSION'` trong [src/lib/i18n/index.ts](file:///d:/1.PROJECT%20CODE/Monokuro/src/lib/i18n/index.ts) cho bản tiếng Việt đồng bộ với phong cách đặt tên Module dạng Brand hoa (*FOCUSX, SPLIT SESSION, VIBRAX, CINECHILL*), đảm bảo khớp 100% giữa SSR và Client.
+  - Nâng giới hạn trích xuất Spotify từ `slice(0, 15)` lên `slice(0, 50)`.
+  - Nâng giới hạn Apple Music / iTunes lookup từ mặc định lên `&limit=50` và trích xuất `slice(1, 51)` đầy đủ danh sách bài hát.
+
+- **Sửa Triệt Để Lỗi Hydration Mismatch & Thuộc Tính Trình Duyệt (`bis_skin_checked="1"`):**
+  - **Nguyên nhân kép:**
+    1. Khi Server SSR kết xuất trang, Zustand `useLanguageStore` khởi tạo với giá trị mặc định tiếng Việt `'vi'` (`nav_focus_mode: 'CHẾ ĐỘ TẬP TRUNG'`). Trên Client, người dùng đã lưu `'en'` trong `localStorage`, khiến Zustand hydrate trả về `FOCUS MODE`, gây ra lỗi lệch chuỗi text `+ FOCUS MODE / - CHẾ ĐỘ TẬP TRUNG`.
+    2. Tiện ích trình duyệt Bitdefender TrafficLight tự động chèn thuộc tính `bis_skin_checked="1"` vào các thẻ `<div>` trong DOM trước khi React hoàn tất quá trình hydrate, khiến React 19 phát hiện xung đột thuộc tính DOM ảo.
+  - **Giải pháp xử lý:**
+    1. Trong [src/components/app-shell/AppShell.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/app-shell/AppShell.tsx):
+       - Áp dụng cơ chế an toàn `isMounted ? t('nav_focus_mode') : 'CHẾ ĐỘ TẬP TRUNG'` cho nút Focus Mode và toàn bộ các mục điều hướng. Trong lần render hydrate đầu tiên trên Client, nội dung văn bản luôn trùng khớp 100% với HTML từ SSR của Server, sau đó `useEffect` kích hoạt `isMounted = true` để chuyển đổi mượt mà sang ngôn ngữ Client.
+       - Bổ sung `suppressHydrationWarning` trực tiếp lên từng thẻ `<div>`, `<header>`, `<nav>`, `<button>`, `<span>` để miễn nhiễm hoàn toàn với thuộc tính `bis_skin_checked="1"` do extension chèn vào.
+    2. Trong [src/components/common/LanguageSelector.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/common/LanguageSelector.tsx):
+       - Bổ sung cờ `isMounted` đảm bảo cờ quốc gia và mã ngôn ngữ (`🇻🇳 VI`) giữ nguyên giá trị mặc định trong lượt hydrate ban đầu, triệt tiêu xung đột với SSR.
+    3. Trong [src/components/player/GlobalAudioPlayer.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/player/GlobalAudioPlayer.tsx):
+       - Thêm `suppressHydrationWarning` cho khung video nổi PIP và container `#monokuro-yt-player`.
 
 ---
 
 ## 🧪 5. Trạng Thái Build & Kiểm Tra Hiện Tại
 - Lệnh build: `npm run build` (Turbopack + TypeScript check)
 - Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 16/16 static pages generated)**.
-- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `acd5f17`).
-- Dev server đang chạy ổn định tại: `http://localhost:3000/cinechill`.
+- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `329c609`).
+- Dev server đang chạy mượt mà tại: `http://localhost:3000/cinechill`.
 
 
 
