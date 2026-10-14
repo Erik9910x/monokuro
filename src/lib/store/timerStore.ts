@@ -116,31 +116,92 @@ export const useTimerStore = create<TimerState>()(
       },
 
       pause: () => {
-        const { status, deadlineAt } = get();
+        const { status, deadlineAt, startedAt, durationMs, mode } = get();
         if (status !== 'running' || !deadlineAt) return;
 
-        const remaining = Math.max(0, deadlineAt - Date.now());
+        const now = Date.now();
+        const remaining = Math.max(0, deadlineAt - now);
         set({
           status: 'paused',
           pausedRemainingMs: remaining,
           deadlineAt: null,
         });
+
+        // Save paused session to IndexedDB so time studied so far is never lost
+        if (startedAt) {
+          saveTimerSession({
+            id: `session_${startedAt}`,
+            mode,
+            status: 'paused',
+            durationMs,
+            startedAt,
+            deadlineAt: null,
+            pausedRemainingMs: remaining,
+            completedAt: null,
+            createdAt: startedAt,
+            updatedAt: now,
+          }).catch(console.error);
+        }
       },
 
       resume: () => {
-        const { status, pausedRemainingMs, durationMs } = get();
+        const { status, pausedRemainingMs, durationMs, startedAt, mode } = get();
         if (status !== 'paused') return;
 
         const now = Date.now();
         const remaining = pausedRemainingMs ?? durationMs;
+        const deadline = now + remaining;
         set({
           status: 'running',
-          deadlineAt: now + remaining,
+          deadlineAt: deadline,
           pausedRemainingMs: null,
         });
+
+        if (startedAt) {
+          saveTimerSession({
+            id: `session_${startedAt}`,
+            mode,
+            status: 'running',
+            durationMs,
+            startedAt,
+            deadlineAt: deadline,
+            pausedRemainingMs: null,
+            completedAt: null,
+            createdAt: startedAt,
+            updatedAt: now,
+          }).catch(console.error);
+        }
       },
 
       reset: () => {
+        const { status, deadlineAt, pausedRemainingMs, startedAt, durationMs, mode } = get();
+        const now = Date.now();
+
+        // If user was studying and resets, calculate exact elapsed time and save it so seconds are NOT lost!
+        if (startedAt && mode === 'focus') {
+          let elapsedMs = 0;
+          if (status === 'running' && deadlineAt) {
+            elapsedMs = Math.max(0, durationMs - Math.max(0, deadlineAt - now));
+          } else if (status === 'paused' && pausedRemainingMs !== null) {
+            elapsedMs = Math.max(0, durationMs - pausedRemainingMs);
+          }
+
+          if (elapsedMs > 5000) {
+            saveTimerSession({
+              id: `session_${startedAt}`,
+              mode,
+              status: 'completed',
+              durationMs: elapsedMs,
+              startedAt,
+              deadlineAt: null,
+              pausedRemainingMs: 0,
+              completedAt: now,
+              createdAt: startedAt,
+              updatedAt: now,
+            }).catch(console.error);
+          }
+        }
+
         set({
           status: 'idle',
           startedAt: null,

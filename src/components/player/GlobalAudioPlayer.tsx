@@ -251,30 +251,32 @@ export default function GlobalAudioPlayer() {
     }
   }, [status]);
 
-  // 3.5 Auto-resolve audio/YouTube stream if track has neither audioUrl nor youtubeId
+  // 3.5 Auto-resolve full YouTube stream if track lacks youtubeId (fixes 30s preview cutoff)
   useEffect(() => {
     if (!currentTrack) return;
-    if (currentTrack.youtubeId || currentTrack.audioUrl) return;
+    if (currentTrack.youtubeId) return;
 
     let isSubscribed = true;
-    const query = `${currentTrack.title} ${currentTrack.artist || ''}`.trim();
+    const query = `${currentTrack.artist} ${currentTrack.title}`.trim();
     if (!query) return;
 
-    fetch(`/api/music/resolve?query=${encodeURIComponent(query)}`)
+    fetch(`/api/music/match-youtube?q=${encodeURIComponent(query)}`)
       .then((res) => res.json())
       .then((data) => {
         if (!isSubscribed) return;
-        if (data.success && data.tracks && data.tracks.length > 0) {
-          const matched = data.tracks[0];
-          usePlayerStore.getState().setTrack({
-            ...currentTrack,
-            youtubeId: matched.youtubeId || currentTrack.youtubeId,
-            audioUrl: matched.audioUrl || currentTrack.audioUrl,
-            capability: 'playable',
-          });
+        if (data.youtubeId) {
+          const state = usePlayerStore.getState();
+          const curr = state.currentTrack;
+          if (curr && (curr.id === currentTrack.id || (curr.title === currentTrack.title && curr.artist === currentTrack.artist))) {
+            state.setTrack({
+              ...curr,
+              youtubeId: data.youtubeId,
+              capability: 'playable',
+            });
+          }
         }
       })
-      .catch((err) => console.warn('Auto-resolve stream failed:', err));
+      .catch((err) => console.warn('Auto-resolve full YouTube stream failed:', err));
 
     return () => {
       isSubscribed = false;
@@ -504,7 +506,28 @@ export default function GlobalAudioPlayer() {
   const handlePlaying = () => notifyMediaPlaying();
   const handlePause = () => notifyMediaPaused();
   const handleWaiting = () => notifyMediaBuffering();
-  const handleEnded = () => notifyMediaEnded();
+  const handleEnded = () => {
+    // If it was an audio preview clip (under 40s) but the song is actually longer, upgrade to YouTube!
+    if (currentTrack && !currentTrack.youtubeId && currentTrack.duration > 40) {
+      const query = `${currentTrack.artist} ${currentTrack.title}`.trim();
+      fetch(`/api/music/match-youtube?q=${encodeURIComponent(query)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.youtubeId) {
+            usePlayerStore.getState().setTrack({
+              ...currentTrack,
+              youtubeId: data.youtubeId,
+              capability: 'playable',
+            });
+            return;
+          }
+          notifyMediaEnded();
+        })
+        .catch(() => notifyMediaEnded());
+      return;
+    }
+    notifyMediaEnded();
+  };
   const handleError = () => {
     if (currentTrack?.audioUrl && !currentTrack.youtubeId) {
       notifyMediaError('Audio stream failed to load or is unavailable.');

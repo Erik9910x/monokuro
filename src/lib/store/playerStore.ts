@@ -280,14 +280,14 @@ export const usePlayerStore = create<PlayerState>()(
 
         get().fetchLyricsForCurrentTrack();
 
-        // Background resolve full-length YouTube stream if needed
-        if (!track.youtubeId && !track.audioUrl) {
+        // Background resolve full-length YouTube stream for any track without youtubeId
+        if (!track.youtubeId) {
           fetch(`/api/music/match-youtube?q=${encodeURIComponent(`${track.artist} ${track.title}`)}`)
             .then((r) => r.json())
             .then((data) => {
               if (data.youtubeId) {
                 const curr = get().currentTrack;
-                if (curr && curr.id === track.id) {
+                if (curr && (curr.id === track.id || (curr.title === track.title && curr.artist === track.artist))) {
                   set({
                     currentTrack: {
                       ...curr,
@@ -333,13 +333,13 @@ export const usePlayerStore = create<PlayerState>()(
 
         get().fetchLyricsForCurrentTrack();
 
-        if (!resolvedTarget.youtubeId && !resolvedTarget.audioUrl) {
+        if (!resolvedTarget.youtubeId) {
           fetch(`/api/music/match-youtube?q=${encodeURIComponent(`${resolvedTarget.artist} ${resolvedTarget.title}`)}`)
             .then((r) => r.json())
             .then((data) => {
               if (data.youtubeId) {
                 const curr = get().currentTrack;
-                if (curr && curr.id === resolvedTarget.id) {
+                if (curr && (curr.id === resolvedTarget.id || (curr.title === resolvedTarget.title && curr.artist === resolvedTarget.artist))) {
                   set({
                     currentTrack: {
                       ...curr,
