@@ -435,7 +435,10 @@ export default function CineChillPage() {
   const currentEmbedUrl = `https://www.youtube.com/embed/${currentVideoId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`;
 
   return (
-    <div className="relative min-h-[calc(100vh-3.5rem)] flex flex-col bg-[#050505] text-[#f4f4f5] px-4 py-6 sm:px-6 lg:px-8">
+    <div
+      className="relative min-h-[calc(100vh-3.5rem)] flex flex-col bg-[#050505] text-[#f4f4f5] px-4 py-6 sm:px-6 lg:px-8"
+      suppressHydrationWarning
+    >
       {/* Background Cinematic Monochrome Glow */}
       <div className="pointer-events-none fixed inset-0 flex items-center justify-center overflow-hidden">
         <div className="h-[600px] w-[800px] rounded-full bg-white/[0.015] blur-[140px]" />

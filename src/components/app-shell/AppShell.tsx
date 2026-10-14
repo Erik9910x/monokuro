@@ -21,6 +21,8 @@ import BottomPlayerDock from '@/components/player/BottomPlayerDock';
 import LanguageSelector from '@/components/common/LanguageSelector';
 import { useLanguageStore } from '@/lib/store/languageStore';
 
+import '@/lib/suppress-extension-noise';
+
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { t } = useLanguageStore();
@@ -43,68 +45,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setIsMounted(true);
     useLanguageStore.getState().initLanguage();
-    try {
-      const origSet = Element.prototype.setAttribute;
-      Element.prototype.setAttribute = function (name, val) {
-        if (
-          typeof name === 'string' &&
-          (name.startsWith('bis_') || name === 'bis_skin_checked' || name === 'bis_register')
-        ) {
-          return;
-        }
-        return origSet.call(this, name, val);
-      };
-      const clean = () => {
-        const els = document.querySelectorAll('[bis_skin_checked], [bis_register]');
-        for (let i = 0; i < els.length; i++) {
-          els[i].removeAttribute('bis_skin_checked');
-          els[i].removeAttribute('bis_register');
-        }
-        if (document.body) document.body.removeAttribute('bis_register');
-      };
-      clean();
-    } catch {}
-
-    // Suppress unhandled errors/rejections from buggy third-party browser extensions (e.g. Urban VPN, adblockers)
-    const handleRejection = (e: PromiseRejectionEvent) => {
-      const reason = e.reason;
-      const stack = typeof reason === 'string' ? reason : reason?.stack || '';
-      const message = typeof reason === 'string' ? reason : reason?.message || '';
-      if (
-        stack.includes('chrome-extension://') ||
-        stack.includes('moz-extension://') ||
-        message.includes('M_ID') ||
-        stack.includes('eppiocemhmnlbhjplcgkofciiegomcon')
-      ) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      }
-    };
-
-    const handleError = (e: ErrorEvent) => {
-      const filename = e.filename || '';
-      const stack = e.error?.stack || '';
-      const message = e.message || '';
-      if (
-        filename.includes('chrome-extension://') ||
-        filename.includes('moz-extension://') ||
-        stack.includes('chrome-extension://') ||
-        stack.includes('moz-extension://') ||
-        message.includes('M_ID') ||
-        stack.includes('eppiocemhmnlbhjplcgkofciiegomcon')
-      ) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      }
-    };
-
-    window.addEventListener('unhandledrejection', handleRejection, true);
-    window.addEventListener('error', handleError, true);
-
-    return () => {
-      window.removeEventListener('unhandledrejection', handleRejection, true);
-      window.removeEventListener('error', handleError, true);
-    };
   }, []);
 
   // Monotonic wall-clock timer ticker
