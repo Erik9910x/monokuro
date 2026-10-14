@@ -224,22 +224,24 @@ Nâng cấp toàn diện cho cửa sổ Picture-in-Picture trong [GlobalAudioPla
   - **Nguyên nhân kép:**
     1. Khi Server SSR kết xuất trang, Zustand `useLanguageStore` khởi tạo với giá trị mặc định tiếng Việt `'vi'` (`nav_focus_mode: 'CHẾ ĐỘ TẬP TRUNG'`). Trên Client, người dùng đã lưu `'en'` trong `localStorage`, khiến Zustand hydrate trả về `FOCUS MODE`, gây ra lỗi lệch chuỗi text `+ FOCUS MODE / - CHẾ ĐỘ TẬP TRUNG`.
     2. Tiện ích trình duyệt Bitdefender TrafficLight tự động chèn thuộc tính `bis_skin_checked="1"` vào các thẻ `<div>` trong DOM trước khi React hoàn tất quá trình hydrate, khiến React 19 phát hiện xung đột thuộc tính DOM ảo.
-  - **Giải pháp xử lý:**
-    1. Trong [src/components/app-shell/AppShell.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/app-shell/AppShell.tsx):
-       - Áp dụng cơ chế an toàn `isMounted ? t('nav_focus_mode') : 'CHẾ ĐỘ TẬP TRUNG'` cho nút Focus Mode và toàn bộ các mục điều hướng. Trong lần render hydrate đầu tiên trên Client, nội dung văn bản luôn trùng khớp 100% với HTML từ SSR của Server, sau đó `useEffect` kích hoạt `isMounted = true` để chuyển đổi mượt mà sang ngôn ngữ Client.
-       - Bổ sung `suppressHydrationWarning` trực tiếp lên từng thẻ `<div>`, `<header>`, `<nav>`, `<button>`, `<span>` để miễn nhiễm hoàn toàn với thuộc tính `bis_skin_checked="1"` do extension chèn vào.
+  - **Giải pháp xử lý gốc rễ (Toàn Ứng Dụng):**
+    1. **Tái cấu trúc Store Đa Ngôn Ngữ [src/lib/store/languageStore.ts](file:///d:/1.PROJECT%20CODE/Monokuro/src/lib/store/languageStore.ts):**
+       - Loại bỏ middleware `persist` tự động đọc `localStorage` đồng bộ trước khi hydrate cây DOM.
+       - Bổ sung cờ `isHydrated: boolean` và hàm `initLanguage()`.
+       - Trong hàm dịch `t(key)`: nếu chưa hoàn tất hydrate (`!isHydrated`), **luôn trả về chuỗi tiếng Việt (`vi`)**, đảm bảo 100% khớp tuyệt đối với Server SSR trên toàn bộ các trang (`/vibrax`, `/focusx`, `/cinechill`, `/settings`).
+       - Sau khi mount cây DOM, hàm `initLanguage()` trong [AppShell.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/app-shell/AppShell.tsx) sẽ đọc `localStorage` và cập nhật ngôn ngữ người dùng đã chọn một cách an toàn thông qua React state update bình thường (không bao giờ gây lỗi hydration).
     2. Trong [src/components/common/LanguageSelector.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/common/LanguageSelector.tsx):
-       - Bổ sung cờ `isMounted` đảm bảo cờ quốc gia và mã ngôn ngữ (`🇻🇳 VI`) giữ nguyên giá trị mặc định trong lượt hydrate ban đầu, triệt tiêu xung đột với SSR.
-    3. Trong [src/components/player/GlobalAudioPlayer.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/player/GlobalAudioPlayer.tsx):
-       - Thêm `suppressHydrationWarning` cho khung video nổi PIP và container `#monokuro-yt-player`.
+       - Sử dụng cờ `isHydrated` từ store để đảm bảo cờ quốc gia và mã ngôn ngữ hiển thị chuẩn xác và đồng bộ.
+    3. Trong [src/app/vibrax/page.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/vibrax/page.tsx), [src/app/focusx/page.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/focusx/page.tsx), [src/app/settings/page.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/app/settings/page.tsx) & [GlobalAudioPlayer.tsx](file:///d:/1.PROJECT%20CODE/Monokuro/src/components/player/GlobalAudioPlayer.tsx):
+       - Thêm `suppressHydrationWarning` cho các thẻ container để miễn nhiễm hoàn toàn với thuộc tính `bis_skin_checked="1"` của Bitdefender.
 
 ---
 
 ## 🧪 5. Trạng Thái Build & Kiểm Tra Hiện Tại
 - Lệnh build: `npm run build` (Turbopack + TypeScript check)
 - Kết quả: **Thành công 100% (Exit code 0, 0 lỗi TypeScript, 16/16 static pages generated)**.
-- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `329c609`).
-- Dev server đang chạy mượt mà tại: `http://localhost:3000/cinechill`.
+- Lệnh sao lưu dự án: `npm run backup` (Snapshot Git đã commit an toàn: `d548159`).
+- Dev server đang chạy mượt mà tại: `http://localhost:3000`.
 
 
 
