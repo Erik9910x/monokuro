@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import AppShell from '@/components/app-shell/AppShell';
 
@@ -21,8 +22,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <head>
-        <script
+      <body className="bg-[#050505] text-[#f4f4f5]" suppressHydrationWarning>
+        <Script
+          id="bis-cleaner"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -51,8 +54,6 @@ export default function RootLayout({
             `,
           }}
         />
-      </head>
-      <body className="bg-[#050505] text-[#f4f4f5]" suppressHydrationWarning>
         <AppShell>{children}</AppShell>
       </body>
     </html>
